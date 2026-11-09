@@ -1,34 +1,31 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ComponentProps, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { errorMessage } from '@/api/client';
+import { BrandArrowIcon } from '@/components/brand/Logo';
+import { LogoLoader } from '@/components/brand/LogoLoader';
 import { useTranslation } from '@/i18n';
 import { useAppTheme } from '@/theme/theme';
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 export function LoadingView({ label }: { label?: string }) {
-  const theme = useAppTheme();
   return (
-    <View style={styles.center} accessibilityRole="progressbar" accessibilityLabel={label ?? 'Loading'}>
-      <ActivityIndicator color={theme.colors.primary} />
-      {label ? (
-        <Text variant="bodyMedium" style={{ color: theme.colors.textMuted }}>
-          {label}
-        </Text>
-      ) : null}
+    <View style={styles.center}>
+      <LogoLoader size={40} label={label} />
     </View>
   );
 }
 
 export function EmptyView({
-  icon = 'lightbulb-outline',
+  icon,
   title,
   body,
   action,
 }: {
+  /** Omit for the brand arrow (generic "start something" empty states). */
   icon?: IconName;
   title: string;
   body?: string;
@@ -37,8 +34,12 @@ export function EmptyView({
   const theme = useAppTheme();
   return (
     <View style={styles.center}>
-      <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-        <MaterialCommunityIcons name={icon} size={32} color={theme.colors.primary} />
+      <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]} importantForAccessibility="no-hide-descendants">
+        {icon ? (
+          <MaterialCommunityIcons name={icon} size={32} color={theme.colors.primary} />
+        ) : (
+          <BrandArrowIcon size={26} color={theme.colors.primary} />
+        )}
       </View>
       <Text variant="titleMedium" style={styles.text} accessibilityRole="header">
         {title}

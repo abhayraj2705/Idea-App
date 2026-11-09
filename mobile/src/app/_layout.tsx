@@ -1,6 +1,7 @@
 import '@/i18n';
 
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +16,7 @@ import { appConfigApi } from '@/api/endpoints/platform';
 import { setUnauthorizedHandler } from '@/api/client';
 import { installMockBackend } from '@/api/mock';
 import { AppLock } from '@/components/AppLock';
+import { BootScreen } from '@/components/brand/LogoLoader';
 import { installNotificationHandler, useNotificationRouting } from '@/features/notifications/push';
 import { config } from '@/lib/config';
 import { queryClient, queryPersister, shouldPersistQuery } from '@/lib/queryClient';
@@ -22,6 +24,7 @@ import { initSentry } from '@/lib/sentry';
 import { isBelowMinimum } from '@/lib/version';
 import { usePrefs } from '@/stores/prefs';
 import { useSession } from '@/stores/session';
+import { font, fontAssets } from '@/theme/fonts';
 import { darkTheme, lightTheme } from '@/theme/theme';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -33,6 +36,11 @@ setUnauthorizedHandler(() => void useSession.getState().signOut('expired'));
 
 export { ErrorBoundary } from 'expo-router';
 
+// Deep links (push notifications, email links) land on nested screens with no
+// history; without an initial route, Android back exits the app. `index`
+// redirects to the right home for the session when it becomes focused.
+export const unstable_settings = { initialRouteName: 'index' };
+
 function useAppTheme() {
   const system = useColorScheme();
   const mode = usePrefs((s) => s.themeMode);
@@ -42,6 +50,9 @@ function useAppTheme() {
 
 export default function RootLayout() {
   const theme = useAppTheme();
+  // Brand fonts are bundled, so this resolves in a frame or two. The native splash
+  // stays up until then; on a load error we fall back to the system font rather than block.
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
   const navTheme = useMemo(() => {
     const base = theme.dark ? DarkTheme : DefaultTheme;
     return {
@@ -55,12 +66,21 @@ export default function RootLayout() {
         border: theme.colors.border,
         notification: theme.colors.primary,
       },
+      // Native-stack headers and tab labels use these; keep them on the brand family.
+      fonts: {
+        regular: { fontFamily: font.regular, fontWeight: '400' as const },
+        medium: { fontFamily: font.medium, fontWeight: '400' as const },
+        bold: { fontFamily: font.bold, fontWeight: '400' as const },
+        heavy: { fontFamily: font.extrabold, fontWeight: '400' as const },
+      },
     };
   }, [theme]);
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
   }, [theme]);
+
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -114,9 +134,11 @@ function RootNavigator() {
     };
   }, []);
 
+  // Hand off from the static native splash to the animated BootScreen as soon as
+  // JS has mounted, instead of holding a frozen splash through the network boot.
   useEffect(() => {
-    if (booted) void SplashScreen.hideAsync().catch(() => {});
-  }, [booted]);
+    void SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   useNotificationRouting(status === 'signedIn');
 
@@ -127,7 +149,7 @@ function RootNavigator() {
     }
   }, [status, pendingInvite, segments]);
 
-  if (!booted) return null;
+  if (!booted) return <BootScreen />;
 
   const minVersion = appConfig?.minSupportedVersion?.[config.platform === 'ios' ? 'ios' : 'android'];
   const needsUpdate = config.platform !== 'web' && isBelowMinimum(config.appVersion, minVersion);

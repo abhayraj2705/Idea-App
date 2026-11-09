@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
 import { useAppTheme } from '@/theme/theme';
+import { font } from '@/theme/fonts';
 
 /** Assistant replies (parity with web ChatMarkdown.tsx). Links open in the in-app browser. */
 export function MarkdownView({ children }: { children: string }) {
@@ -15,10 +16,10 @@ export function MarkdownView({ children }: { children: string }) {
         return false;
       }}
       style={{
-        body: { color: theme.colors.onSurface, fontSize: 15, lineHeight: 22 },
-        heading1: { fontSize: 20, fontWeight: '700', marginVertical: 6 },
-        heading2: { fontSize: 18, fontWeight: '700', marginVertical: 6 },
-        heading3: { fontSize: 16, fontWeight: '700', marginVertical: 4 },
+        body: { color: theme.colors.onSurface, fontSize: 15, lineHeight: 22, fontFamily: font.regular },
+        heading1: { fontSize: 20, fontFamily: font.bold, marginVertical: 6 },
+        heading2: { fontSize: 18, fontFamily: font.bold, marginVertical: 6 },
+        heading3: { fontSize: 16, fontFamily: font.bold, marginVertical: 4 },
         link: { color: theme.colors.primary },
         code_inline: {
           fontFamily: mono,

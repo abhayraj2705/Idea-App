@@ -1,18 +1,34 @@
-import { createMMKV, type MMKV } from 'react-native-mmkv';
+import type { MMKV } from 'react-native-mmkv';
 
 /**
  * Non-secret, synchronous storage (MMKV): prefs, builder drafts and the
  * persisted query cache. Credentials NEVER go here — see secureStore.ts.
+ *
+ * react-native-mmkv v4 is built on Nitro Modules, which are NOT bundled in
+ * Expo Go. Importing it there throws at module-evaluation time, so it is
+ * required lazily inside the try/catch below; a static import would crash
+ * every route that (transitively) imports this file. In Expo Go, Jest or any
+ * other runtime without the native module, data lives in memory for the
+ * session. Development and production builds use MMKV as normal.
  */
 let instance: MMKV | null = null;
+let unavailable = false;
 const memory = new Map<string, string>();
 
 function mmkv(): MMKV | null {
-  if (instance) return instance;
+  if (instance || unavailable) return instance;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createMMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv');
     instance = createMMKV({ id: 'idea-app' });
   } catch {
-    instance = null; // e.g. Jest or an unsupported runtime → in-memory fallback
+    unavailable = true;
+    if (__DEV__ && process.env.NODE_ENV !== 'test') {
+      console.warn(
+        '[storage] MMKV native module not available (Expo Go?). Using in-memory storage; ' +
+          'prefs and drafts will not persist across restarts. Use a development build for full behaviour.',
+      );
+    }
   }
   return instance;
 }

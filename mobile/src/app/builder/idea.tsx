@@ -1,8 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip, HelperText, IconButton, Menu, Text, TextInput } from 'react-native-paper';
+import { Image, StyleSheet, View } from 'react-native';
+import { Button, HelperText, IconButton, Menu, Text, TextInput, TouchableRipple } from 'react-native-paper';
 
 import { aiApi } from '@/api/endpoints/ai';
 import { errorMessage } from '@/api/client';
@@ -134,18 +134,29 @@ export default function IdeaStep() {
 
       <View style={styles.examples}>
         <View style={styles.row}>
-          <MaterialCommunityIcons name="lightbulb-outline" size={16} color={theme.colors.textMuted} />
+          <MaterialCommunityIcons name="creation-outline" size={16} color={theme.colors.textMuted} />
           <Text variant="labelLarge" style={{ color: theme.colors.textMuted }}>
             {t('builder.examples')}
           </Text>
         </View>
-        <ScrollView horizontal={false}>
-          {shown.map((ex) => (
-            <Chip key={ex} style={styles.chip} onPress={() => update({ prompt: ex })} textStyle={styles.chipText} ellipsizeMode="tail">
-              {ex}
-            </Chip>
-          ))}
-        </ScrollView>
+        {/* Full-width rows that wrap, so whole example prompts are readable (chips truncated them). */}
+        {shown.map((ex) => (
+          <TouchableRipple
+            key={ex}
+            onPress={() => update({ prompt: ex })}
+            style={[styles.example, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
+            borderless
+            accessibilityRole="button"
+            accessibilityLabel={`Use example: ${ex}`}
+          >
+            <View style={styles.exampleInner}>
+              <Text variant="bodyMedium" style={styles.flex}>
+                {ex}
+              </Text>
+              <MaterialCommunityIcons name="arrow-top-left" size={18} color={theme.colors.textMuted} />
+            </View>
+          </TouchableRipple>
+        ))}
       </View>
     </BuilderScaffold>
   );
@@ -158,6 +169,7 @@ const styles = StyleSheet.create({
   attachment: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   thumb: { width: 56, height: 56, borderRadius: 8 },
   examples: { gap: 8 },
-  chip: { marginBottom: 8, alignSelf: 'flex-start', maxWidth: '100%' },
-  chipText: { flexShrink: 1 },
+  example: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 },
+  exampleInner: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  flex: { flex: 1 },
 });

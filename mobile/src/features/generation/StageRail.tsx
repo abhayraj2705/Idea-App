@@ -31,7 +31,7 @@ export function StageRail({ stage, done, failed }: { stage: Stage; done: boolean
               </View>
               {i < STAGES.length - 1 ? <View style={[styles.line, { backgroundColor: i < current ? theme.colors.primary : theme.colors.border }]} /> : <View style={styles.lineSpacer} />}
             </View>
-            <Text variant="labelSmall" style={{ color: active || complete ? theme.colors.onSurface : theme.colors.textMuted }} maxFontSizeMultiplier={1.4}>
+            <Text variant="labelSmall" style={{ color: active || complete ? theme.colors.onSurface : theme.colors.textMuted }} maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
               {STAGE_LABEL[s]}
             </Text>
           </View>

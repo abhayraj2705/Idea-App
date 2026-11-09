@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, HelperText, IconButton, SegmentedButtons, TextInput } from 'react-native-paper';
+import { Button, Card, HelperText, IconButton, TextInput } from 'react-native-paper';
 
 import { aiApi } from '@/api/endpoints/ai';
 import { errorMessage } from '@/api/client';
 import type { Requirement } from '@/api/types';
 import { ErrorView, LoadingView } from '@/components/StateViews';
+import { Segmented } from '@/components/Segmented';
 import { BuilderScaffold } from '@/features/builder/BuilderScaffold';
 import { useTranslation } from '@/i18n';
 import { track } from '@/lib/analytics';
@@ -87,7 +88,7 @@ export default function RequirementsStep() {
               />
               <IconButton icon="trash-can-outline" onPress={() => remove(r.id)} accessibilityLabel={`Remove requirement ${i + 1}`} />
             </View>
-            <SegmentedButtons
+            <Segmented
               density="small"
               value={r.priority ?? 'should'}
               onValueChange={(v) => edit(r.id, { priority: v as Requirement['priority'] })}

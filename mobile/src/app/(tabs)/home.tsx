@@ -4,6 +4,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { Avatar, Banner, Button, Card, Text, TouchableRipple } from 'react-native-paper';
 
 import { authApi } from '@/api/endpoints/auth';
+import { BrandArrowIcon } from '@/components/brand/Logo';
 import { ProjectCard, RunningJobCard, TemplateCard } from '@/components/Cards';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { QuotaMeter } from '@/components/QuotaMeter';
@@ -72,7 +73,7 @@ export default function Home() {
 
       <QuotaMeter quota={quota.data} />
 
-      <Button mode="contained" icon="lightbulb-on-outline" onPress={() => router.push('/builder/idea')} contentStyle={styles.bigBtn} labelStyle={styles.bigLabel}>
+      <Button mode="contained" icon={BrandArrowIcon} onPress={() => router.push('/builder/idea')} contentStyle={styles.bigBtn} labelStyle={styles.bigLabel}>
         {t('home.newIdea')}
       </Button>
 
@@ -94,7 +95,7 @@ export default function Home() {
         {recent.length ? (
           recent.map((p) => <ProjectCard key={p.id} project={p} />)
         ) : projects.isLoading ? null : (
-          <EmptyView icon="lightbulb-on-outline" title={t('home.emptyTitle')} body={t('home.emptyBody')} />
+          <EmptyView title={t('home.emptyTitle')} body={t('home.emptyBody')} />
         )}
       </Section>
 

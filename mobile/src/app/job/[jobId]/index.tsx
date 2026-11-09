@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQueryClient } from '@tanstack/react-query';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Button, Card, Dialog, List, Portal, Snackbar, Text } from 'react-native-paper';
 import Animated, { FadeInDown, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 
@@ -15,7 +15,7 @@ import { StatusChip } from '@/components/StatusChip';
 import { isTerminal, type FileEntry } from '@/features/generation/eventReducer';
 import { StageRail } from '@/features/generation/StageRail';
 import { useJobStream } from '@/features/generation/useJobStream';
-import { qk, useJob } from '@/features/queries';
+import { qk, useJob, useProject } from '@/features/queries';
 import { useTranslation } from '@/i18n';
 import { durationBucket, track } from '@/lib/analytics';
 import { supportMailto } from '@/lib/support';
@@ -56,6 +56,8 @@ export default function JobScreen() {
   const flags = useFeatures();
   const userId = useSession((s) => s.user?.id);
   const reduceMotion = useReducedMotion();
+  // With large system text, stack the success actions full-width instead of truncating them.
+  const stackActions = useWindowDimensions().fontScale > 1.3;
   const job = useJob(jobId);
   const { state, mode } = useJobStream(jobId);
   const [now, setNow] = useState(() => Date.now());
@@ -73,9 +75,19 @@ export default function JobScreen() {
   }, [done]);
 
   const startedAt = job.data?.createdAt ? new Date(job.data.createdAt).getTime() : undefined;
-  const endedAt = job.data?.finishedAt ? new Date(job.data.finishedAt).getTime() : undefined;
-  const elapsed = startedAt ? (endedAt ?? (done ? now : now)) - startedAt : 0;
+  // A finished job must never keep ticking: fall back to updatedAt when the
+  // backend omits finishedAt (older jobs), and only use the live clock while running.
+  const endedAt = job.data?.finishedAt
+    ? new Date(job.data.finishedAt).getTime()
+    : done && job.data?.updatedAt
+      ? new Date(job.data.updatedAt).getTime()
+      : undefined;
+  const elapsed = startedAt ? Math.max(0, (endedAt ?? now) - startedAt) : 0;
+  const durationLabel = startedAt ? `${done ? 'Took' : 'Elapsed'} ${formatDuration(elapsed)}` : null;
   const projectId = state.projectId ?? job.data?.projectId;
+  const project = useProject(done ? projectId : undefined);
+  // Historical jobs may no longer replay their file stream; the project still knows its file count.
+  const fileCount = state.files.length || project.data?.fileCount || 0;
 
   useEffect(() => {
     if (state.endStatus && !tracked.current) {
@@ -123,7 +135,7 @@ export default function JobScreen() {
         <View style={styles.header}>
           <View style={styles.flex}>
             <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
-              {[job.data?.stack, startedAt ? formatDuration(elapsed) : null].filter(Boolean).join(' · ')}
+              {[job.data?.stack ?? project.data?.stack, durationLabel].filter(Boolean).join(' · ')}
             </Text>
             <Text variant="titleMedium">{state.phaseLabel || (done ? 'Finished' : 'Starting…')}</Text>
           </View>
@@ -170,18 +182,18 @@ export default function JobScreen() {
 
         {state.endStatus === 'complete' ? (
           <Card mode="contained" style={{ backgroundColor: theme.colors.successContainer }}>
-            <Card.Title title={t('job.successTitle')} subtitle={`${state.files.length} files · ${formatDuration(elapsed)}`} left={(p) => <MaterialCommunityIcons name="check-circle" size={p.size} color={theme.colors.success} />} />
-            <Card.Actions style={styles.wrapActions}>
-              <Button icon="eye-outline" onPress={() => projectId && router.push(`/project/${projectId}/preview`)} disabled={!projectId}>
+            <Card.Title title={t('job.successTitle')} subtitle={`${fileCount} ${fileCount === 1 ? 'file' : 'files'} · built in ${formatDuration(elapsed)}`} left={(p) => <MaterialCommunityIcons name="check-circle" size={p.size} color={theme.colors.success} />} />
+            <Card.Content style={styles.successActions}>
+              <Button mode="outlined" compact icon="eye-outline" style={[styles.successBtn, stackActions && styles.fullWidth]} onPress={() => projectId && router.push(`/project/${projectId}/preview`)} disabled={!projectId}>
                 {t('job.preview')}
               </Button>
-              <Button icon="chat-outline" onPress={() => projectId && router.push(`/project/${projectId}/chat`)} disabled={!projectId}>
+              <Button mode="outlined" compact icon="chat-outline" style={[styles.successBtn, stackActions && styles.fullWidth]} onPress={() => projectId && router.push(`/project/${projectId}/chat`)} disabled={!projectId}>
                 {t('job.chat')}
               </Button>
-              <Button mode="contained" icon="rocket-launch-outline" onPress={() => projectId && router.push(`/project/${projectId}/deploy`)} disabled={!projectId}>
+              <Button mode="contained" compact icon="rocket-launch-outline" style={[styles.successBtn, stackActions && styles.fullWidth]} onPress={() => projectId && router.push(`/project/${projectId}/deploy`)} disabled={!projectId}>
                 {t('job.deploy')}
               </Button>
-            </Card.Actions>
+            </Card.Content>
           </Card>
         ) : null}
 
@@ -261,10 +273,26 @@ export default function JobScreen() {
             {t('job.files')}
           </Text>
           <Text variant="labelMedium" style={{ color: theme.colors.textMuted }}>
-            {state.files.length}
+            {fileCount}
           </Text>
         </View>
-        {state.files.length === 0 ? (
+        {state.files.length === 0 && done && projectId ? (
+          <Card mode="outlined" style={{ borderColor: theme.colors.border }}>
+            <Card.Content style={styles.gap}>
+              <Text variant="bodyMedium">
+                {fileCount ? `This app has ${fileCount} ${fileCount === 1 ? 'file' : 'files'}.` : 'This generation has finished.'}
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
+                The live file stream is only kept while a build runs. Browse the project for its current files.
+              </Text>
+            </Card.Content>
+            <Card.Actions>
+              <Button icon="file-tree-outline" onPress={() => router.push(`/project/${projectId}/files`)}>
+                Browse files
+              </Button>
+            </Card.Actions>
+          </Card>
+        ) : state.files.length === 0 ? (
           <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
             Files appear here as they’re written.
           </Text>
@@ -325,6 +353,11 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   notice: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10 },
   wrapActions: { flexWrap: 'wrap', gap: 4 },
+  gap: { gap: 6 },
+  // Equal thirds normally; wraps instead of truncating at large text sizes.
+  successActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 14 },
+  successBtn: { flexGrow: 1, flexBasis: '30%' },
+  fullWidth: { flexBasis: '100%' },
   section: { marginVertical: 0 },
   report: { paddingHorizontal: 16, paddingBottom: 12, fontFamily: 'monospace' },
   file: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 2 },

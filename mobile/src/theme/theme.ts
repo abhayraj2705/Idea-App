@@ -1,6 +1,6 @@
-import { Platform } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, configureFonts, useTheme, type MD3Theme } from 'react-native-paper';
 
+import { font } from './fonts';
 import { tokens, type ColorScheme, type ColorTokens } from './tokens';
 
 export type AppTheme = MD3Theme & {
@@ -22,13 +22,44 @@ export type AppTheme = MD3Theme & {
   scheme: ColorScheme;
 };
 
+/**
+ * MD3 type scale on the brand family. Sizes follow MD3; weight comes from the
+ * family (fontWeight stays '400' so Android doesn't synthesise extra bold).
+ * Large display/headline styles get slightly tighter tracking for a crisper look.
+ */
+type Variant = keyof typeof MD3LightTheme.fonts;
+const familyFor: Record<string, string> = {
+  display: font.extrabold,
+  headline: font.bold,
+  title: font.semibold,
+  label: font.semibold,
+  body: font.regular,
+};
+const tracking: Partial<Record<Variant, number>> = {
+  displayLarge: -1,
+  displayMedium: -0.75,
+  displaySmall: -0.5,
+  // Display sizes only. Android mis-measures wrapped lines for custom fonts with
+  // negative letterSpacing and clips the last line (seen on titles at 320dp), so
+  // anything that can wrap (headline/title/body) keeps the default tracking.
+};
+const fonts = configureFonts({
+  config: Object.fromEntries(
+    (Object.keys(MD3LightTheme.fonts) as Variant[]).map((v) => {
+        const base = MD3LightTheme.fonts[v] as { letterSpacing: number };
+        const family = familyFor[v.replace(/(Large|Medium|Small)$/, '')] ?? font.regular;
+      return [v, { fontFamily: family, fontWeight: '400' as const, letterSpacing: tracking[v] ?? base.letterSpacing }];
+    }),
+  ),
+});
+
 function build(scheme: ColorScheme): AppTheme {
   const base = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
   const c: ColorTokens = tokens.color[scheme];
   return {
     ...base,
     roundness: 3, // Paper multiplies this; gives 12px cards
-    fonts: configureFonts({ config: { fontFamily: Platform.select({ ios: 'System', default: undefined }) } }),
+    fonts,
     colors: {
       ...base.colors,
       primary: c.accent,

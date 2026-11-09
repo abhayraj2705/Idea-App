@@ -63,7 +63,7 @@ export default function FileScreen() {
         <Text variant="labelMedium" numberOfLines={1} style={[styles.flex, { color: theme.colors.textMuted }]}>
           {file.path}
         </Text>
-        <Button compact icon="lightbulb-on-outline" loading={explaining} disabled={explaining} onPress={explain}>
+        <Button compact icon="comment-question-outline" loading={explaining} disabled={explaining} onPress={explain}>
           Explain
         </Button>
       </View>

@@ -1,11 +1,12 @@
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SegmentedButtons } from 'react-native-paper';
+
 
 import type { Job } from '@/api/types';
 import { JobRow } from '@/components/Cards';
 import { EmptyView, ErrorView, LoadingView } from '@/components/StateViews';
+import { Segmented } from '@/components/Segmented';
 import { useJobs } from '@/features/queries';
 import { useAppTheme } from '@/theme/theme';
 
@@ -28,7 +29,7 @@ export default function Activity() {
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <View style={styles.controls}>
-        <SegmentedButtons
+        <Segmented
           value={filter}
           onValueChange={(v) => setFilter(v as Filter)}
           buttons={[

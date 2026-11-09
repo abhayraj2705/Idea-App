@@ -29,10 +29,11 @@ function Action({ icon, label, onPress, disabled }: { icon: IconName; label: str
       style={[styles.action, { backgroundColor: theme.colors.surfaceVariant, opacity: disabled ? 0.5 : 1 }]}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
     >
       <View style={styles.actionInner}>
         <MaterialCommunityIcons name={icon} size={24} color={theme.colors.primary} />
-        <Text variant="labelMedium" numberOfLines={1}>
+        <Text variant="labelMedium" numberOfLines={1} maxFontSizeMultiplier={1.4}>
           {label}
         </Text>
       </View>
@@ -97,7 +98,7 @@ export default function ProjectOverview() {
           <View style={styles.flex}>
             <Text variant="titleLarge">{p.name}</Text>
             <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
-              {[p.stack, p.fileCount != null ? `${p.fileCount} files` : null, timeAgo(p.updatedAt)].filter(Boolean).join(' · ')}
+              {[p.stack, p.fileCount != null ? `${p.fileCount} files` : null, p.updatedAt ? `Updated ${timeAgo(p.updatedAt)}` : null].filter(Boolean).join(' · ')}
             </Text>
           </View>
           {p.status ? <StatusChip status={p.status} /> : null}
@@ -121,13 +122,21 @@ export default function ProjectOverview() {
           </Card.Content>
         </Card>
 
+        {/* Primary actions get full-width buttons; the four secondary tools form one even row. */}
+        <Button mode="contained" icon="rocket-launch-outline" onPress={() => go('deploy')} disabled={guest} contentStyle={styles.primaryBtn}>
+          Deploy
+        </Button>
+        {p.kind === 'mobile' && flags.mobileBuild ? (
+          <Button mode="outlined" icon="android" onPress={() => go('android-build')} disabled={guest} contentStyle={styles.primaryBtn}>
+            Build Android APK
+          </Button>
+        ) : null}
+
         <View style={styles.grid}>
           <Action icon="chat-processing-outline" label="Chat" onPress={() => go('chat')} />
           <Action icon="file-tree-outline" label="Files" onPress={() => go('files')} />
           <Action icon="history" label="History" onPress={() => go('history')} disabled={!flags.conversationThread} />
-          <Action icon="rocket-launch-outline" label="Deploy" onPress={() => go('deploy')} disabled={guest} />
-          {p.kind === 'mobile' && flags.mobileBuild ? <Action icon="android" label="APK" onPress={() => go('android-build')} disabled={guest} /> : null}
-          <Action icon="share-variant-outline" label={sharing ? 'Preparing…' : 'Share ZIP'} onPress={share} disabled={sharing} />
+          <Action icon="share-variant-outline" label={sharing ? 'Preparing…' : 'Share'} onPress={share} disabled={sharing} />
         </View>
 
         {!guest ? (
@@ -163,7 +172,8 @@ const styles = StyleSheet.create({
   bigIcon: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
   previewCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  action: { width: '31%', flexGrow: 1, borderRadius: 14, minHeight: 76 },
+  grid: { flexDirection: 'row', gap: 10 },
+  action: { flex: 1, borderRadius: 14, minHeight: 76 },
+  primaryBtn: { minHeight: 48 },
   actionInner: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 4 },
 });

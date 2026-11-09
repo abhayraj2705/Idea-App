@@ -1,7 +1,8 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Divider, List, Text } from 'react-native-paper';
 
+import { LogoMark } from '@/components/brand/Logo';
 import { Screen } from '@/components/Screen';
 import { config, legalUrls } from '@/lib/config';
 import { useAppTheme } from '@/theme/theme';
@@ -12,7 +13,9 @@ export default function About() {
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <Image source={require('../../../assets/icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
+        <View style={styles.logo}>
+          <LogoMark size={64} />
+        </View>
         <Text variant="titleLarge">IDEA</Text>
         <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
           Version {config.appVersion} ({config.buildNumber}) · {config.appEnv}
@@ -30,5 +33,5 @@ export default function About() {
 
 const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 6, padding: 24 },
-  logo: { width: 72, height: 72, borderRadius: 18 },
+  logo: { marginBottom: 6 },
 });

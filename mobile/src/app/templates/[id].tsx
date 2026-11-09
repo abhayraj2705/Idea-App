@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Chip, HelperText, Text } from 'react-native-paper';
 
 import { errorMessage, projectsApi } from '@/api';
+import { BrandArrowIcon } from '@/components/brand/Logo';
 import { kindIcon } from '@/components/Cards';
 import { Screen } from '@/components/Screen';
 import { EmptyView, LoadingView } from '@/components/StateViews';
@@ -52,7 +53,7 @@ export default function TemplateDetail() {
             </Button>
             {t.examplePrompt ? (
               <Button
-                icon="lightbulb-on-outline"
+                icon={BrandArrowIcon}
                 onPress={() => {
                   useDraft.getState().update({ prompt: t.examplePrompt!, stack: t.stack, requirements: [], wireframe: undefined, wireframeApproved: false });
                   router.push('/builder/idea');

@@ -1,11 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTranslation } from '@/i18n';
 import { haptics } from '@/lib/haptics';
 import { useAppTheme } from '@/theme/theme';
+import { font } from '@/theme/fonts';
 
 export default function TabsLayout() {
   const theme = useAppTheme();
@@ -20,7 +21,12 @@ export default function TabsLayout() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        // Cap scaling on the 5-up tab bar: at 200% system text the labels otherwise clip. Content screens scale fully.
+        tabBarLabel: ({ color, children }) => (
+          <Text style={[styles.tabLabel, { color }]} numberOfLines={1} maxFontSizeMultiplier={1.25}>
+            {children}
+          </Text>
+        ),
       }}
     >
       <Tabs.Screen
@@ -84,6 +90,7 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  tabLabel: { fontSize: 11, fontFamily: font.semibold },
   newWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minWidth: 64 },
   newBtn: {
     width: 52,

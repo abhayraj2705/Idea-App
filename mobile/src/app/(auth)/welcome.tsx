@@ -1,9 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Banner, Button, Text } from 'react-native-paper';
 
+import { LogoMark } from '@/components/brand/Logo';
 import { Screen } from '@/components/Screen';
 import type { IconName } from '@/components/StateViews';
 import { SocialAuthButtons } from '@/features/auth/AuthButtons';
@@ -11,6 +12,7 @@ import { useTranslation } from '@/i18n';
 import { legalUrls } from '@/lib/config';
 import { useSession } from '@/stores/session';
 import { useAppTheme } from '@/theme/theme';
+import { font } from '@/theme/fonts';
 
 export default function Welcome() {
   const { t } = useTranslation();
@@ -30,7 +32,9 @@ export default function Welcome() {
         {reason === 'deleted' ? t('auth.accountDeleted') : t('auth.sessionExpired')}
       </Banner>
       <View style={styles.hero}>
-        <Image source={require('../../../assets/icon.png')} style={styles.logo} accessibilityIgnoresInvertColors accessibilityLabel="IDEA logo" />
+        <View style={styles.logo}>
+          <LogoMark size={72} />
+        </View>
         <Text variant="displaySmall" style={styles.title} accessibilityRole="header">
           IDEA
         </Text>
@@ -87,8 +91,8 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 8, paddingTop: 24 },
-  logo: { width: 88, height: 88, borderRadius: 22 },
-  title: { fontWeight: '800', letterSpacing: 2 },
+  logo: { marginBottom: 8 },
+  title: { fontFamily: font.extrabold, letterSpacing: 1 },
   center: { textAlign: 'center' },
   props: { gap: 14, paddingVertical: 8 },
   prop: { flexDirection: 'row', alignItems: 'center', gap: 12 },

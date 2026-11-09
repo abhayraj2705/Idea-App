@@ -3,11 +3,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, HelperText, SegmentedButtons, Text } from 'react-native-paper';
+import { Button, HelperText, Text } from 'react-native-paper';
 
 import { errorMessage, teamsApi, type TeamRole } from '@/api';
 import { FormField } from '@/components/FormField';
 import { Screen } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
 import { inviteSchema as schema } from '@/features/auth/schemas';
 import { qk } from '@/features/queries';
 import { haptics } from '@/lib/haptics';
@@ -34,7 +35,7 @@ export default function Invite() {
     <Screen keyboard>
       <Text variant="bodyMedium">They’ll get an email with a link that opens the app.</Text>
       <FormField control={control} name="email" label="Email" keyboardType="email-address" autoCapitalize="none" autoFocus />
-      <SegmentedButtons
+      <Segmented
         value={role}
         onValueChange={(v) => setRole(v as TeamRole)}
         buttons={[

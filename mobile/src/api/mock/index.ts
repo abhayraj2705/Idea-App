@@ -4,6 +4,8 @@
  * enough to exercise every screen end to end without the real backend, including
  * time-scripted generation and edit-chat streams served via /events polling.
  */
+import { secureStore } from '@/lib/secureStore';
+
 import { ApiError, setTransport, type RequestOptions } from '../client';
 import type {
   ChatMessage,
@@ -519,7 +521,15 @@ on('POST', /^\/api\/platform\/notifications\/devices$/, () => ({ registered: tru
 on('DELETE', /^\/api\/platform\/notifications\/devices\/(.+)$/, () => ({ removed: true }));
 
 export function installMockBackend() {
+  let restored = false;
   setTransport(async (path, opts) => {
+    // The demo "server" lives in memory but the client keeps its token in
+    // SecureStore. Accept our own token after a reload, like a real backend
+    // would, so demo sessions survive Fast Refresh instead of "expiring".
+    if (!restored) {
+      restored = true;
+      if (!db.token && (await secureStore.getToken().catch(() => null)) === 'mock-token') db.token = 'mock-token';
+    }
     await new Promise((r) => setTimeout(r, 180 + Math.random() * 220));
     const method = opts.method ?? 'GET';
     const clean = path.split('?')[0]!;

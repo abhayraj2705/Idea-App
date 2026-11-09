@@ -85,6 +85,12 @@ const en = {
     public: 'Public',
     empty: 'No projects yet',
     emptyBody: 'Projects you generate show up here.',
+    emptyTeam: 'Nothing shared with your team',
+    emptyTeamBody: 'Turn on “Shared with team” in a project to see it here.',
+    emptyPublic: 'No public projects',
+    emptyPublicBody: 'Projects with a public link show up here.',
+    noMatch: 'No projects match “{{query}}”',
+    noMatchBody: 'Try a different name, description or stack.',
     deleteConfirm: 'Delete “{{name}}”? This cannot be undone.',
   },
   builder: {

@@ -1,9 +1,10 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Banner, Button, Card, Dialog, IconButton, Portal, SegmentedButtons, Text } from 'react-native-paper';
+import { Banner, Button, Card, Dialog, IconButton, Portal, Text } from 'react-native-paper';
 import { QRCode } from '@/components/QRCode';
 import { WebView as RNWebView, type WebViewProps } from 'react-native-webview';
 import type { ComponentType, Ref } from 'react';
@@ -12,6 +13,7 @@ import { mobileBuildApi, previewApi } from '@/api/endpoints/platform';
 import { errorMessage } from '@/api/client';
 import { Screen } from '@/components/Screen';
 import { EmptyView, ErrorView, LoadingView } from '@/components/StateViews';
+import { Segmented } from '@/components/Segmented';
 import { isAllowedUrl, previewOrigins } from '@/features/preview/origins';
 import { useProject, useProjectSdk } from '@/features/queries';
 import { track } from '@/lib/analytics';
@@ -113,7 +115,7 @@ function WebPreview({ projectId, notReadyReasons }: { projectId: string; notRead
   return (
     <View style={styles.flex}>
       <View style={styles.devices}>
-        <SegmentedButtons
+        <Segmented
           density="small"
           value={device}
           onValueChange={(v) => setDevice(v as Device)}
@@ -197,7 +199,7 @@ function MobilePreview({ projectId }: { projectId: string }) {
       {upgradeMsg ? <Text variant="bodySmall">{upgradeMsg}</Text> : null}
 
       <Card mode="contained">
-        <Card.Title title="Run it on this phone" subtitle="Opens directly in Expo Go — no QR code needed." left={(pp) => <IconButton {...pp} icon="cellphone-play" />} />
+        <Card.Title title="Run it on this phone" subtitle="Opens directly in Expo Go — no QR code needed." left={(pp) => <MaterialCommunityIcons name="cellphone-play" size={pp.size} color={theme.colors.primary} importantForAccessibility="no" />} />
         <Card.Actions>
           <Button mode="contained" icon="play" disabled={!expoUrl} onPress={() => (p.engine === 'snack' ? setSnackConsent(true) : openExpoGo())}>
             Open in Expo Go
@@ -205,7 +207,7 @@ function MobilePreview({ projectId }: { projectId: string }) {
         </Card.Actions>
       </Card>
       <Card mode="outlined" style={{ borderColor: theme.colors.border }}>
-        <Card.Title title="Preview on another device" left={(pp) => <IconButton {...pp} icon="qrcode" />} />
+        <Card.Title title="Preview on another device" left={(pp) => <MaterialCommunityIcons name="qrcode" size={pp.size} color={theme.colors.primary} importantForAccessibility="no" />} />
         <Card.Actions>
           <Button icon="qrcode-scan" disabled={!expoUrl} onPress={() => setQr(true)}>
             Show QR code
@@ -214,7 +216,7 @@ function MobilePreview({ projectId }: { projectId: string }) {
       </Card>
       {p.webUrl ? (
         <Card mode="outlined" style={{ borderColor: theme.colors.border }}>
-          <Card.Title title="Quick look" subtitle="The web build, right here." left={(pp) => <IconButton {...pp} icon="web" />} />
+          <Card.Title title="Quick look" subtitle="The web build, right here." left={(pp) => <MaterialCommunityIcons name="web" size={pp.size} color={theme.colors.primary} importantForAccessibility="no" />} />
           <Card.Actions>
             <Button icon="eye-outline" onPress={() => setWebLook(true)}>
               Open web build

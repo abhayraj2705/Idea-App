@@ -10,6 +10,7 @@ import { Screen } from '@/components/Screen';
 import { legalUrls } from '@/lib/config';
 import { useSession } from '@/stores/session';
 import { useAppTheme } from '@/theme/theme';
+import { font } from '@/theme/fonts';
 
 const CONSEQUENCES = [
   'All your projects, conversations and restore points',
@@ -100,5 +101,5 @@ const styles = StyleSheet.create({
   gap: { gap: 10 },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   flex: { flex: 1 },
-  bold: { fontWeight: '700' },
+  bold: { fontFamily: font.bold },
 });

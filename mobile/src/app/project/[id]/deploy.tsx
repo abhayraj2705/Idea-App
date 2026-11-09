@@ -121,8 +121,9 @@ export default function DeployScreen() {
               key={p.id}
               onPress={() => (p.connected ? setProvider(p.id) : connect(p.id))}
               style={[styles.provider, { borderColor: provider === p.id ? theme.colors.primary : theme.colors.border }]}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: provider === p.id }}
+              accessibilityRole={p.connected ? 'radio' : 'button'}
+              accessibilityState={p.connected ? { checked: provider === p.id } : undefined}
+              accessibilityLabel={p.connected ? `${p.name}, connected` : `Connect ${p.name}`}
               borderless
             >
               <View style={styles.row}>
@@ -168,9 +169,16 @@ export default function DeployScreen() {
           </Button>
         </View>
       ) : (
-        <Button mode="contained" icon="clipboard-list-outline" onPress={preview} loading={busy === 'plan'} disabled={!provider || !!busy}>
-          Preview deploy plan
-        </Button>
+        <View style={styles.gap}>
+          <Button mode="contained" icon="clipboard-list-outline" onPress={preview} loading={busy === 'plan'} disabled={!provider || !!busy}>
+            Preview deploy plan
+          </Button>
+          {!provider ? (
+            <Text variant="bodySmall" style={{ color: theme.colors.textMuted, textAlign: 'center' }}>
+              Choose a connected provider above to continue.
+            </Text>
+          ) : null}
+        </View>
       )}
     </Screen>
   );

@@ -6,6 +6,7 @@ import { Banner, Card, HelperText, List, Menu, Text } from 'react-native-paper';
 
 import { aiApi } from '@/api/endpoints/ai';
 import { ApiError, errorMessage } from '@/api/client';
+import { BrandArrowIcon } from '@/components/brand/Logo';
 import { isQuotaExhausted, QuotaMeter } from '@/components/QuotaMeter';
 import { BuilderScaffold } from '@/features/builder/BuilderScaffold';
 import { maybeAskAfterFirstGeneration } from '@/features/notifications/push';
@@ -100,7 +101,7 @@ export default function ReviewStep() {
       {offline ? <Banner visible icon="wifi-off">{t('builder.offlineDraft')}</Banner> : null}
       <QuotaMeter quota={quota.data} />
       <Card mode="outlined" style={{ borderColor: theme.colors.border }}>
-        <List.Item title={draft.projectName || 'Untitled app'} description={draft.prompt} descriptionNumberOfLines={3} left={(p) => <List.Icon {...p} icon="lightbulb-on-outline" />} onPress={() => router.navigate('/builder/idea')} />
+        <List.Item title={draft.projectName || 'Untitled app'} description={draft.prompt} descriptionNumberOfLines={3} left={(p) => <List.Icon {...p} icon={BrandArrowIcon} />} onPress={() => router.navigate('/builder/idea')} />
         <List.Item title={stack?.name ?? draft.stack ?? 'No stack'} description={flags.generationScope ? (draft.scope === 'website' ? 'Website only' : 'Full app') : undefined} left={(p) => <List.Icon {...p} icon="layers-outline" />} onPress={() => router.navigate('/builder/stack')} />
         <List.Item title={`${draft.requirements.length} requirements`} left={(p) => <List.Icon {...p} icon="format-list-checks" />} onPress={() => router.navigate('/builder/requirements')} />
         {flags.wireframeGate ? (

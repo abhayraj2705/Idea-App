@@ -1,4 +1,5 @@
 import * as Application from 'expo-application';
+import { isRunningInExpoGo } from 'expo';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
@@ -13,6 +14,7 @@ type Extra = {
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Partial<Extra>;
+const inExpoGo = isRunningInExpoGo();
 
 export const config = {
   appEnv: extra.appEnv ?? 'development',
@@ -23,8 +25,9 @@ export const config = {
   googleClientIds: extra.googleClientIds ?? { ios: '', android: '', web: '' },
   mockApi: process.env.EXPO_PUBLIC_MOCK_API === '1' || !!extra.mockApi,
   scheme: (Constants.expoConfig?.scheme as string | undefined) ?? 'ideaplatform',
-  appVersion: Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '1.0.0',
-  buildNumber: Application.nativeBuildVersion ?? '0',
+  // Inside Expo Go the native version is Expo Go's own (e.g. 58.0.5), not ours.
+  appVersion: (inExpoGo ? null : Application.nativeApplicationVersion) ?? Constants.expoConfig?.version ?? '1.0.0',
+  buildNumber: (inExpoGo ? 'dev' : Application.nativeBuildVersion) ?? '0',
   platform: Platform.OS as 'ios' | 'android' | 'web',
 };
 

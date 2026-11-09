@@ -35,7 +35,7 @@ export const ProjectCard = memo(function ProjectCard({ project, onLongPress }: {
           <MaterialCommunityIcons name={kindIcon(project.kind)} size={22} color={theme.colors.primary} />
         </View>
         <View style={styles.flex}>
-          <Text variant="titleMedium" numberOfLines={1}>
+          <Text variant="titleMedium" numberOfLines={2}>
             {project.name}
           </Text>
           <Text variant="bodySmall" numberOfLines={1} style={{ color: theme.colors.textMuted }}>
@@ -74,17 +74,35 @@ export const RunningJobCard = memo(function RunningJobCard({ job }: { job: Job }
   );
 });
 
+/** Says what the timestamp on an activity row means, so it can't be confused with a project's "Updated" time. */
+function jobWhen(job: Job): string | null {
+  const running = job.status === 'running' || job.status === 'queued' || job.status === 'awaiting_plan_approval';
+  const at = running ? job.createdAt : (job.finishedAt ?? job.updatedAt ?? job.createdAt);
+  if (!at) return null;
+  const verb = running ? 'Started' : job.status === 'failed' ? 'Failed' : job.status === 'cancelled' ? 'Cancelled' : 'Generated';
+  return `${verb} ${timeAgo(at)}`;
+}
+
 export const JobRow = memo(function JobRow({ job }: { job: Job }) {
   const theme = useAppTheme();
   return (
-    <Card mode="outlined" style={{ borderColor: theme.colors.border }} onPress={() => router.push(`/job/${job.id}`)}>
+    <Card
+      mode="outlined"
+      style={{ borderColor: theme.colors.border }}
+      onPress={() => router.push(`/job/${job.id}`)}
+      accessibilityLabel={`${job.projectName ?? 'Generation'}, ${jobWhen(job) ?? ''}`}
+      accessibilityHint="Opens the generation"
+    >
       <Card.Content style={styles.row}>
+        <View style={[styles.icon, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <MaterialCommunityIcons name="progress-check" size={22} color={theme.colors.primary} />
+        </View>
         <View style={styles.flex}>
           <Text variant="titleSmall" numberOfLines={1}>
             {job.projectName ?? 'Generation'}
           </Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
-            {[job.stack, timeAgo(job.updatedAt ?? job.createdAt)].filter(Boolean).join(' · ')}
+          <Text variant="bodySmall" numberOfLines={2} style={{ color: theme.colors.textMuted }}>
+            {[job.stack, jobWhen(job)].filter(Boolean).join(' · ')}
           </Text>
         </View>
         <StatusChip status={job.status} compact />

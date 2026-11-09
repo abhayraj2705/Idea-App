@@ -4,13 +4,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { Searchbar, SegmentedButtons, Snackbar } from 'react-native-paper';
+import { router } from 'expo-router';
+import { Button, Searchbar, Snackbar } from 'react-native-paper';
 
 import { errorMessage, projectsApi, type ProjectFilter, type ProjectSummary } from '@/api';
 import { ProjectCard } from '@/components/Cards';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmptyView, ErrorView, LoadingView } from '@/components/StateViews';
+import { Segmented } from '@/components/Segmented';
 import { useProjects } from '@/features/queries';
 import { useTranslation } from '@/i18n';
 import { haptics } from '@/lib/haptics';
@@ -77,7 +79,7 @@ export default function Projects() {
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <View style={styles.controls}>
         <Searchbar placeholder={t('projects.search')} value={query} onChangeText={setQuery} mode="bar" elevation={0} accessibilityLabel={t('projects.search')} />
-        <SegmentedButtons
+        <Segmented
           value={filter}
           onValueChange={(v) => setFilter(v as ProjectFilter)}
           buttons={[
@@ -101,7 +103,26 @@ export default function Projects() {
           contentContainerStyle={styles.list}
           onRefresh={() => projects.refetch()}
           refreshing={projects.isRefetching}
-          ListEmptyComponent={<EmptyView icon="folder-outline" title={t('projects.empty')} body={t('projects.emptyBody')} />}
+          ListEmptyComponent={
+            query.trim() ? (
+              <EmptyView icon="magnify" title={t('projects.noMatch', { query: query.trim() })} body={t('projects.noMatchBody')} />
+            ) : filter === 'team' ? (
+              <EmptyView icon="account-group-outline" title={t('projects.emptyTeam')} body={t('projects.emptyTeamBody')} />
+            ) : filter === 'public' ? (
+              <EmptyView icon="earth" title={t('projects.emptyPublic')} body={t('projects.emptyPublicBody')} />
+            ) : (
+              <EmptyView
+                icon="folder-outline"
+                title={t('projects.empty')}
+                body={t('projects.emptyBody')}
+                action={
+                  <Button mode="contained" icon="plus" onPress={() => router.push('/builder/idea')}>
+                    {t('home.newIdea')}
+                  </Button>
+                }
+              />
+            )
+          }
         />
       )}
       <ConfirmDialog
