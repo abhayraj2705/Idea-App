@@ -70,6 +70,10 @@ const REPORT_TYPES = new Set([
 ]);
 
 const KNOWN_TYPES = new Set([
+  // Platform backend names (generation-runner.ts / generation-job.routes.ts)
+  'job', 'queued', 'resuming', 'warning', 'plan', 'scope', 'file', 'file_healed', 'preview_file', 'preview_ready',
+  'failover', 'handoff', 'schema_drift', 'candidate_demoted', 'capability_unavailable', 'capability_not_applicable',
+  'db_validation_report', 'canceled', 'stream_end',
   'phase',
   'plan_ready',
   'plan_completed',
@@ -114,6 +118,7 @@ const num = (v: unknown): number | undefined => (typeof v === 'number' && Number
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
 
 export function applyEvent(state: GenerationState, event: JobEvent): GenerationState {
+  if (event.type === 'stream_end') return applyStreamEnd(state, (event.data ?? {}) as Record<string, unknown>);
   if (typeof event.seq === 'number' && event.seq <= state.lastSeq) return state;
   const d = (event.data ?? {}) as Record<string, unknown>;
   const s: GenerationState = { ...state, lastSeq: typeof event.seq === 'number' ? event.seq : state.lastSeq };
@@ -122,7 +127,7 @@ export function applyEvent(state: GenerationState, event: JobEvent): GenerationS
   switch (event.type) {
     case 'phase': {
       const phase = str(d.phase) ?? str(d.name) ?? '';
-      s.phaseLabel = str(d.label) ?? phase;
+      s.phaseLabel = str(d.label) ?? str(d.message) ?? phase;
       s.stage = advance(s.stage, phaseToStage(phase, s.stage));
       return s;
     }
@@ -140,10 +145,12 @@ export function applyEvent(state: GenerationState, event: JobEvent): GenerationS
       s.modulesDone += 1;
       s.stage = advance(s.stage, 'generate');
       return s;
+    case 'file':
     case 'file_checkpoint': {
       const path = str(d.path);
       if (!path) return s;
-      const entry: FileEntry = { path, size: num(d.size), seq: event.seq, content: str(d.content) };
+      const content = str(d.content);
+      const entry: FileEntry = { path, size: num(d.size) ?? (content != null ? content.length : undefined), seq: event.seq, content };
       const idx = s.files.findIndex((f) => f.path === path);
       s.files = idx >= 0 ? s.files.map((f, i) => (i === idx ? entry : f)) : [entry, ...s.files];
       s.stage = advance(s.stage, 'generate');
@@ -187,6 +194,10 @@ export function applyEvent(state: GenerationState, event: JobEvent): GenerationS
       s.planPending = false;
       return s;
     }
+    case 'canceled':
+      s.status = 'cancelled';
+      s.planPending = false;
+      return s;
     case 'error':
       s.endStatus = 'failed';
       s.status = 'failed';
@@ -204,7 +215,10 @@ export function applyEvent(state: GenerationState, event: JobEvent): GenerationS
       s.agentSteps = [...s.agentSteps, { seq: event.seq, label: str(d.label) ?? str(d.step) ?? 'Working…' }];
       return s;
     case 'proposal':
-      s.proposalId = str(d.proposalId) ?? str(d.id);
+      {
+        const nested = (d.proposal && typeof d.proposal === 'object' ? d.proposal : {}) as Record<string, unknown>;
+        s.proposalId = str(d.proposalId) ?? str(d.id) ?? str(nested.id) ?? str(nested._id) ?? str(nested.proposalId);
+      }
       return s;
     case 'scope_upgrade_required':
       s.scopeUpgradeRequired = true;
@@ -224,7 +238,20 @@ export function applyEvent(state: GenerationState, event: JobEvent): GenerationS
 }
 
 export function applyEvents(state: GenerationState, events: JobEvent[]): GenerationState {
-  return [...events].sort((a, b) => a.seq - b.seq).reduce(applyEvent, state);
+  // Seq-less frames (stream_end, seq -1) close the stream, so they always apply last.
+  const order = (e: JobEvent) => (e.seq < 0 ? Number.POSITIVE_INFINITY : e.seq);
+  return [...events].sort((a, b) => order(a) - order(b)).reduce(applyEvent, state);
+}
+
+/**
+ * Final status from the server when it closes the stream. `complete` events
+ * don't say whether the run finished with issues; this does.
+ */
+function applyStreamEnd(state: GenerationState, d: Record<string, unknown>): GenerationState {
+  const status = str(d.status);
+  if (status === 'canceled' || status === 'cancelled') return { ...state, status: 'cancelled', planPending: false };
+  if (status !== 'complete' && status !== 'partial' && status !== 'failed') return state;
+  return { ...state, endStatus: status, status, stage: status === 'failed' ? state.stage : 'finalise', planPending: false };
 }
 
 export function isTerminal(state: GenerationState) {

@@ -49,8 +49,10 @@ const useSignedIn = () => useSession((s) => s.status === 'signedIn');
 
 export const useQuota = () => useQuery({ queryKey: qk.quota, queryFn: authApi.quota, enabled: useSignedIn() });
 
-export const useProjects = (filter: ProjectFilter = 'mine') =>
-  useQuery({ queryKey: qk.projects(filter), queryFn: () => projectsApi.list(filter), enabled: useSignedIn() });
+export const useProjects = (filter: ProjectFilter = 'mine') => {
+  const me = useSession((s) => s.user?.id);
+  return useQuery({ queryKey: qk.projects(filter), queryFn: () => projectsApi.list(filter, me), enabled: useSignedIn() });
+};
 
 export const useProject = (id?: string) =>
   useQuery({ queryKey: qk.project(id ?? ''), queryFn: () => projectsApi.get(id!), enabled: !!id });

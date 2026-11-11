@@ -2,7 +2,6 @@ import EventSource from 'react-native-sse';
 
 import { aiApi, authHeaders, buildUrl } from '@/api';
 import type { JobEvent } from '@/api/types';
-import { config } from '@/lib/config';
 
 import { isKnownEventType } from './eventReducer';
 
@@ -41,7 +40,9 @@ export function parseFrame(eventName: string, raw: string | null, lastEventId: s
   const seqFromBody = typeof body.seq === 'number' ? body.seq : undefined;
   const seqFromId = lastEventId != null && lastEventId !== '' ? Number(lastEventId) : undefined;
   const seq = seqFromBody ?? (Number.isFinite(seqFromId) ? (seqFromId as number) : undefined);
-  if (seq === undefined) return null;
+  // The server closes a finished stream with `{ type: 'stream_end', status }`, which
+  // isn't part of the transcript and so has no seq. It still carries the final status.
+  if (seq === undefined) return type === 'stream_end' ? { seq: -1, type, data: body } : null;
   const data = (body.data && typeof body.data === 'object' ? body.data : body) as Record<string, unknown>;
   return { seq, type, data };
 }
@@ -60,6 +61,7 @@ const STREAM_EVENT_NAMES = [
   'healing_round', 'healing_files', 'healing_convergence', 'typecheck_report', 'compile_report', 'validation_report',
   'verification_report', 'quality_report', 'issue_ledger', 'preview_readiness', 'budget_report', 'completeness_gap',
   'phase_diagnostic', 'token_limit', 'codemod_report', 'repair_report', 'generation_quality_complete', 'complete',
+  'file', 'canceled', 'stream_end',
   'error', 'turn', 'delta', 'agent_step', 'proposal', 'scope_upgrade_required',
 ] as const;
 
@@ -79,9 +81,7 @@ export class JobStream {
   start() {
     this.stopped = false;
     this.failures = 0;
-    // The in-app demo backend has no SSE endpoint, so it uses the poll path.
-    if (config.mockApi) void this.poll();
-    else void this.connect();
+    void this.connect();
   }
 
   stop() {
@@ -194,7 +194,6 @@ export class JobStream {
     if (this.timer) clearTimeout(this.timer);
     this.failures = 0;
     this.closeSse();
-    if (config.mockApi) void this.poll();
-    else void this.connect();
+    void this.connect();
   }
 }

@@ -17,6 +17,7 @@ import { qk, useProject } from '@/features/queries';
 import { config } from '@/lib/config';
 import { timeAgo } from '@/lib/format';
 import { useFeatures, useSession } from '@/stores/session';
+import { radius } from '@/theme/radius';
 import { useAppTheme } from '@/theme/theme';
 
 function Action({ icon, label, onPress, disabled }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean }) {
@@ -26,13 +27,13 @@ function Action({ icon, label, onPress, disabled }: { icon: IconName; label: str
       onPress={onPress}
       disabled={disabled}
       borderless
-      style={[styles.action, { backgroundColor: theme.colors.surfaceVariant, opacity: disabled ? 0.5 : 1 }]}
+      style={[styles.action, { borderColor: theme.colors.border, opacity: disabled ? 0.4 : 1 }]}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: !!disabled }}
     >
       <View style={styles.actionInner}>
-        <MaterialCommunityIcons name={icon} size={24} color={theme.colors.primary} />
+        <MaterialCommunityIcons name={icon} size={22} color={theme.colors.onSurface} />
         <Text variant="labelMedium" numberOfLines={1} maxFontSizeMultiplier={1.4}>
           {label}
         </Text>
@@ -83,7 +84,8 @@ export default function ProjectOverview() {
 
   return (
     <>
-      <Stack.Screen options={{ title: p.name }} />
+      {/* The name is the page heading below; repeating it in the bar read as a stutter. */}
+      <Stack.Screen options={{ title: '' }} />
       <Screen refreshing={project.isRefetching} onRefresh={() => project.refetch()}>
         <OfflineBanner />
         {guest ? (
@@ -92,22 +94,30 @@ export default function ProjectOverview() {
           </Banner>
         ) : null}
         <View style={styles.header}>
-          <View style={[styles.bigIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-            <MaterialCommunityIcons name={kindIcon(p.kind)} size={28} color={theme.colors.primary} />
+          <View style={[styles.bigIcon, { backgroundColor: theme.colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name={kindIcon(p.kind)} size={24} color={theme.colors.onSurface} />
           </View>
           <View style={styles.flex}>
-            <Text variant="titleLarge">{p.name}</Text>
+            <Text variant="headlineSmall" accessibilityRole="header">
+              {p.name}
+            </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
               {[p.stack, p.fileCount != null ? `${p.fileCount} files` : null, p.updatedAt ? `Updated ${timeAgo(p.updatedAt)}` : null].filter(Boolean).join(' · ')}
             </Text>
           </View>
-          {p.status ? <StatusChip status={p.status} /> : null}
         </View>
-        {p.description ? <Text variant="bodyMedium">{p.description}</Text> : null}
+        {p.status ? <StatusChip status={p.status} /> : null}
+        {p.description ? (
+          <Text variant="bodyMedium" style={{ color: theme.colors.textMuted }}>
+            {p.description}
+          </Text>
+        ) : null}
 
-        <Card mode="contained" onPress={() => go('preview')} accessibilityLabel="Open preview">
+        <Card mode="outlined" style={[styles.card, { borderColor: theme.colors.border }]} onPress={() => go('preview')} accessibilityLabel="Open preview">
           <Card.Content style={styles.previewCard}>
-            <MaterialCommunityIcons name={p.kind === 'mobile' ? 'cellphone-play' : 'monitor-eye'} size={36} color={theme.colors.primary} />
+            <View style={[styles.previewIcon, { backgroundColor: theme.colors.surfaceVariant }]}>
+              <MaterialCommunityIcons name={p.kind === 'mobile' ? 'cellphone-play' : 'monitor-eye'} size={22} color={theme.colors.onSurface} />
+            </View>
             <View style={styles.flex}>
               <Text variant="titleMedium">Preview</Text>
               <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
@@ -127,7 +137,7 @@ export default function ProjectOverview() {
           Deploy
         </Button>
         {p.kind === 'mobile' && flags.mobileBuild ? (
-          <Button mode="outlined" icon="android" onPress={() => go('android-build')} disabled={guest} contentStyle={styles.primaryBtn}>
+          <Button mode="outlined" icon="android" textColor={theme.colors.onSurface} style={{ borderColor: theme.colors.border }} onPress={() => go('android-build')} disabled={guest} contentStyle={styles.primaryBtn}>
             Build Android APK
           </Button>
         ) : null}
@@ -140,7 +150,7 @@ export default function ProjectOverview() {
         </View>
 
         {!guest ? (
-          <Card mode="outlined" style={{ borderColor: theme.colors.border }}>
+          <Card mode="outlined" style={[styles.card, { borderColor: theme.colors.border }]}>
             <List.Item
               title="Shared with team"
               description="Teammates can view and edit"
@@ -156,8 +166,14 @@ export default function ProjectOverview() {
           </Card>
         ) : null}
 
-        <Button mode="text" icon="open-in-new" onPress={() => WebBrowser.openBrowserAsync(`${config.webUrl}/projects/${id}`)}>
-          Open on web (design canvas, full editor)
+        <Button
+          mode="text"
+          icon="open-in-new"
+          textColor={theme.colors.textMuted}
+          onPress={() => WebBrowser.openBrowserAsync(`${config.webUrl}/projects/${id}`)}
+          accessibilityHint="Opens the full editor and design canvas in your browser"
+        >
+          Open in web editor
         </Button>
       </Screen>
       <Snackbar visible={!!snack} onDismiss={() => setSnack(null)}>
@@ -169,11 +185,13 @@ export default function ProjectOverview() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bigIcon: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  flex: { flex: 1 },
+  bigIcon: { width: 48, height: 48, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1, gap: 2 },
+  card: { borderRadius: radius.control },
   previewCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  grid: { flexDirection: 'row', gap: 10 },
-  action: { flex: 1, borderRadius: 14, minHeight: 76 },
+  previewIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  grid: { flexDirection: 'row', gap: 8 },
+  action: { flex: 1, borderRadius: radius.control, borderWidth: 1, minHeight: 72 },
   primaryBtn: { minHeight: 48 },
   actionInner: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 4 },
 });

@@ -1,3 +1,4 @@
+import { View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 import { useAppTheme } from '@/theme/theme';
@@ -69,24 +70,20 @@ type MarkProps = LogoColors & {
 export function LogoMark({ size = 48, rounded = 0, accessibilityLabel = 'IDEA logo', ...colors }: MarkProps) {
   const c = useLogoColors(colors);
   const r = rounded * LOGO_VIEWBOX;
+  // A11y props live on a View: react-native-svg forwards `accessible` to the DOM on web.
   return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${LOGO_VIEWBOX} ${LOGO_VIEWBOX}`}
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={accessibilityLabel}
-    >
-      <Rect width={LOGO_VIEWBOX} height={LOGO_VIEWBOX} rx={r} ry={r} fill={c.tile} />
-      <Path
-        d={LOGO_ARROW_PATH}
-        stroke={c.glyph}
-        strokeWidth={LOGO_STROKE}
-        strokeLinecap="butt"
-        strokeLinejoin="miter"
-        fill="none"
-      />
-    </Svg>
+    <View accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel} style={{ width: size, height: size }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${LOGO_VIEWBOX} ${LOGO_VIEWBOX}`}>
+        <Rect width={LOGO_VIEWBOX} height={LOGO_VIEWBOX} rx={r} ry={r} fill={c.tile} />
+        <Path
+          d={LOGO_ARROW_PATH}
+          stroke={c.glyph}
+          strokeWidth={LOGO_STROKE}
+          strokeLinecap="butt"
+          strokeLinejoin="miter"
+          fill="none"
+        />
+      </Svg>
+    </View>
   );
 }

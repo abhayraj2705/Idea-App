@@ -2,8 +2,9 @@ import { router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
-import { Avatar, Divider, List, Text } from 'react-native-paper';
+import { Divider, List, Text } from 'react-native-paper';
 
+import { Avatar } from '@/components/Avatar';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import type { IconName } from '@/components/StateViews';
@@ -34,10 +35,12 @@ export default function Profile() {
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <Avatar.Text size={64} label={(user?.name ?? user?.email ?? '?').slice(0, 1).toUpperCase()} />
+        <Avatar name={user?.name ?? user?.email} size={56} />
         <View style={styles.flex}>
-          <Text variant="titleLarge">{user?.name ?? 'Your account'}</Text>
-          <Text variant="bodyMedium" style={{ color: theme.colors.textMuted }}>
+          <Text variant="titleLarge" numberOfLines={1}>
+            {user?.name ?? 'Your account'}
+          </Text>
+          <Text variant="bodyMedium" numberOfLines={1} style={{ color: theme.colors.textMuted }}>
             {user?.email}
           </Text>
         </View>
@@ -63,8 +66,8 @@ export default function Profile() {
       </List.Section>
       <Divider />
       <List.Section>
-        <List.Item title={t('settings.support')} left={(p) => <List.Icon {...p} icon="lifebuoy" />} onPress={() => Linking.openURL(supportMailto(user?.id))} />
-        <List.Item title="Privacy Policy" left={(p) => <List.Icon {...p} icon="shield-account-outline" />} onPress={() => WebBrowser.openBrowserAsync(legalUrls.privacy)} />
+        <List.Item title={t('settings.support')} left={(p) => <List.Icon {...p} icon="lifebuoy" />} right={(p) => <List.Icon {...p} icon="open-in-new" />} onPress={() => Linking.openURL(supportMailto(user?.id))} />
+        <List.Item title="Privacy Policy" left={(p) => <List.Icon {...p} icon="shield-account-outline" />} right={(p) => <List.Icon {...p} icon="open-in-new" />} onPress={() => WebBrowser.openBrowserAsync(legalUrls.privacy)} />
         <List.Item title={t('settings.signOut')} left={(p) => <List.Icon {...p} icon="logout" />} onPress={() => setConfirm(true)} />
         <List.Item
           title={t('settings.deleteAccount')}
@@ -86,6 +89,6 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16 },
-  flex: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 16, paddingVertical: 20 },
+  flex: { flex: 1, gap: 2 },
 });

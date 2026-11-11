@@ -1,11 +1,15 @@
 import { Stack } from 'expo-router';
 
+import { headerOptions } from '@/theme/navigation';
+import { useAppTheme } from '@/theme/theme';
+
 // A deep link straight to chat/files/deploy keeps the project overview underneath for back.
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index' };
 
 export default function ProjectLayout() {
+  const theme = useAppTheme();
   return (
-    <Stack screenOptions={{ headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}>
+    <Stack screenOptions={headerOptions(theme)}>
       <Stack.Screen name="index" options={{ title: 'Project' }} />
       <Stack.Screen name="chat" options={{ title: 'Chat' }} />
       <Stack.Screen name="proposal/[pid]" options={{ title: 'Review changes', presentation: 'modal' }} />

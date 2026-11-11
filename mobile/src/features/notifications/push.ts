@@ -57,7 +57,7 @@ function projectId(): string | undefined {
 
 /** Registers the device if permission is (or becomes) granted. Safe to call repeatedly. */
 export async function registerForPush(opts: { prompt: boolean }): Promise<'granted' | 'denied' | 'unavailable'> {
-  if (!isNative || !Device.isDevice || config.mockApi) return 'unavailable';
+  if (!isNative || !Device.isDevice) return 'unavailable';
   await ensureAndroidChannels();
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted' && opts.prompt) {

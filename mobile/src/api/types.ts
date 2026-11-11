@@ -116,12 +116,32 @@ export type Stack = {
   status: StackStatus;
   capabilities?: string[];
 };
-export type Provider = { id: string; name: string; models: { id: string; name: string; default?: boolean }[] };
+/** `requiresKey`: the user must add their own API key (otherwise the platform's key is used). */
+export type Provider = { id: string; name: string; requiresKey?: boolean; models: { id: string; name: string; default?: boolean }[] };
 export type Capabilities = { stacks: Stack[] };
 
 export type Requirement = { id: string; title: string; detail?: string; priority?: 'must' | 'should' | 'could' };
-export type Wireframe = { id: string; screens: { name: string; description: string; elements?: string[] }[] };
-export type Estimate = { tokens: number; minutes: number; cost?: number; quotaCost?: number };
+/** `raw` is the server's wireframe spec, sent back with the generate request once approved. */
+export type Wireframe = { id: string; screens: { name: string; description: string; elements?: string[] }[]; raw?: unknown };
+/** `minutes` is only set when the server provides one; `risk`/`mode` come from the token-budget planner. */
+export type Estimate = { tokens: number; minutes?: number; risk?: string; mode?: string; cost?: number; quotaCost?: number };
+
+// Requirements interview (POST /api/ai/requirements → /requirements/compile)
+export type QuestionCategory = 'features' | 'design' | 'users' | 'technical' | 'scope' | string;
+export type RequirementsQuestion = { id: string; question: string; hint?: string; category: QuestionCategory; required: boolean };
+export type RequirementsAnswer = { questionId: string; question: string; answer: string; required?: boolean };
+export type QuestionsResult = { appType?: string; projectName?: string; questions: RequirementsQuestion[] };
+/** Compiled requirements document. Typed loosely: it round-trips to the server unchanged. */
+export type RequirementsDocument = {
+  originalPrompt: string;
+  projectName: string;
+  appType?: string;
+  coreFeatures?: string[];
+  compiledSummary?: string;
+  answers?: RequirementsAnswer[];
+  approvedWireframe?: unknown;
+  [key: string]: unknown;
+};
 
 export type GenerationScope = 'website' | 'fullApp';
 

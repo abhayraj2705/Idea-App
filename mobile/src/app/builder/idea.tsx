@@ -2,7 +2,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { Button, HelperText, IconButton, Menu, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, HelperText, IconButton, Menu, Text, TouchableRipple } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 
 import { aiApi } from '@/api/endpoints/ai';
 import { errorMessage } from '@/api/client';
@@ -108,7 +109,15 @@ export default function IdeaStep() {
           visible={menu}
           onDismiss={() => setMenu(false)}
           anchor={
-            <Button mode="outlined" icon="image-plus" onPress={() => setMenu(true)} loading={analyzing} disabled={analyzing || !signedIn}>
+            <Button
+              mode="outlined"
+              icon="image-plus"
+              textColor={theme.colors.onSurface}
+              style={{ borderColor: theme.colors.border }}
+              onPress={() => setMenu(true)}
+              loading={analyzing}
+              disabled={analyzing || !signedIn}
+            >
               {t('builder.attach')}
             </Button>
           }

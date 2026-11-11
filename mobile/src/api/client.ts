@@ -1,6 +1,7 @@
 import { clientHeader, config } from '@/lib/config';
 import { secureStore } from '@/lib/secureStore';
 
+import { withIds } from './adapters';
 import type { Envelope } from './types';
 
 /**
@@ -59,7 +60,7 @@ export type RequestOptions = {
 
 export type Transport = (path: string, opts: RequestOptions) => Promise<unknown>;
 let transportOverride: Transport | null = null;
-/** Used by the in-app demo backend (api/mock) and by tests. */
+/** Test seam: lets unit tests replace the network layer. Not used by the app. */
 export function setTransport(t: Transport | null) {
   transportOverride = t;
 }
@@ -93,8 +94,8 @@ export function unwrapEnvelope<T>(status: number, payload: unknown, retryAfter?:
   const looksLikeEnvelope = !!env && typeof env === 'object' && 'success' in env;
 
   if (status >= 200 && status < 300) {
-    if (!looksLikeEnvelope) return payload as T;
-    if (env.success) return env.data as T;
+    if (!looksLikeEnvelope) return withIds(payload) as T;
+    if (env.success) return withIds(env.data) as T;
     throw new ApiError(status, env.error || 'Request failed', env.code);
   }
   const message =

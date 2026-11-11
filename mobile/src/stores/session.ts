@@ -84,6 +84,14 @@ export const useSession = create<SessionState>((set, get) => ({
     queryClient.setQueryData(['me'], user);
     setSentryUser(user.id);
     set({ user, status: 'signedIn', signOutReason: null, pendingTwoFactor: null });
+    // Login/register return a partial user (no emailVerified, 2FA, API keys);
+    // load the full profile in the background.
+    void authApi
+      .me()
+      .then((full) => {
+        if (get().status === 'signedIn') get().setUser(full);
+      })
+      .catch(() => {});
   },
 
   /** Sign-out: DELETE device token → clear SecureStore, query cache, MMKV user data. The builder draft survives an expiry. */

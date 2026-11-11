@@ -66,6 +66,10 @@ export default function JobScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
   const done = isTerminal(state) || job.data?.status === 'cancelled';
+  // The stream's `complete` event doesn't carry the outcome; the job record does.
+  // Once the run has ended, a server-side partial/failed verdict wins.
+  const serverEnd = job.data?.status === 'partial' || job.data?.status === 'failed' ? job.data.status : undefined;
+  const endStatus = state.endStatus ? (serverEnd ?? state.endStatus) : undefined;
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -94,6 +98,7 @@ export default function JobScreen() {
       tracked.current = true;
       track('generation_finished', { status: state.endStatus, duration: durationBucket(elapsed) });
       void qc.invalidateQueries({ queryKey: qk.jobs });
+      void qc.invalidateQueries({ queryKey: qk.job(jobId) });
       void qc.invalidateQueries({ queryKey: ['projects'] });
       if (projectId) void qc.invalidateQueries({ queryKey: qk.project(projectId) });
     }
@@ -137,12 +142,13 @@ export default function JobScreen() {
             <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
               {[job.data?.stack ?? project.data?.stack, durationLabel].filter(Boolean).join(' · ')}
             </Text>
-            <Text variant="titleMedium">{state.phaseLabel || (done ? 'Finished' : 'Starting…')}</Text>
+            {/* Once there's an outcome, the result card below says it; repeating "Finished"/"Ready" here was noise. */}
+            {!state.endStatus ? <Text variant="titleMedium">{state.phaseLabel || (done ? 'Stopped' : 'Starting…')}</Text> : null}
           </View>
-          <StatusChip status={state.endStatus ?? job.data?.status ?? state.status} />
+          {!state.endStatus ? <StatusChip status={job.data?.status ?? state.status} /> : null}
         </View>
 
-        <StageRail stage={state.stage} done={!!state.endStatus} failed={state.endStatus === 'failed'} />
+        <StageRail stage={state.stage} done={!!endStatus} failed={endStatus === 'failed'} />
 
         {mode === 'reconnecting' || mode === 'polling' ? (
           <View style={[styles.notice, { backgroundColor: theme.colors.surfaceVariant }]} accessibilityLiveRegion="polite">
@@ -180,35 +186,72 @@ export default function JobScreen() {
           </Card>
         ) : null}
 
-        {state.endStatus === 'complete' ? (
-          <Card mode="contained" style={{ backgroundColor: theme.colors.successContainer }}>
-            <Card.Title title={t('job.successTitle')} subtitle={`${fileCount} ${fileCount === 1 ? 'file' : 'files'} · built in ${formatDuration(elapsed)}`} left={(p) => <MaterialCommunityIcons name="check-circle" size={p.size} color={theme.colors.success} />} />
-            <Card.Content style={styles.successActions}>
-              <Button mode="outlined" compact icon="eye-outline" style={[styles.successBtn, stackActions && styles.fullWidth]} onPress={() => projectId && router.push(`/project/${projectId}/preview`)} disabled={!projectId}>
-                {t('job.preview')}
-              </Button>
-              <Button mode="outlined" compact icon="chat-outline" style={[styles.successBtn, stackActions && styles.fullWidth]} onPress={() => projectId && router.push(`/project/${projectId}/chat`)} disabled={!projectId}>
-                {t('job.chat')}
-              </Button>
-              <Button mode="contained" compact icon="rocket-launch-outline" style={[styles.successBtn, stackActions && styles.fullWidth]} onPress={() => projectId && router.push(`/project/${projectId}/deploy`)} disabled={!projectId}>
+        {endStatus === 'complete' ? (
+          <Card mode="outlined" style={[styles.card, { borderColor: theme.colors.border }]}>
+            <Card.Content style={styles.result}>
+              <View style={styles.row} accessibilityLiveRegion="polite">
+                <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.success} />
+                <View style={styles.flex}>
+                  <Text variant="titleMedium" accessibilityRole="header">
+                    {t('job.successTitle')}
+                  </Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
+                    {`${fileCount} ${fileCount === 1 ? 'file' : 'files'} · built in ${formatDuration(elapsed)}`}
+                  </Text>
+                </View>
+              </View>
+              <Button mode="contained" icon="rocket-launch-outline" contentStyle={styles.btn} onPress={() => projectId && router.push(`/project/${projectId}/deploy`)} disabled={!projectId}>
                 {t('job.deploy')}
               </Button>
+              <View style={styles.secondary}>
+                <Button mode="outlined" icon="eye-outline" textColor={theme.colors.onSurface} style={[styles.half, stackActions && styles.full, { borderColor: theme.colors.border }]} onPress={() => projectId && router.push(`/project/${projectId}/preview`)} disabled={!projectId}>
+                  {t('job.preview')}
+                </Button>
+                <Button mode="outlined" icon="chat-outline" textColor={theme.colors.onSurface} style={[styles.half, stackActions && styles.full, { borderColor: theme.colors.border }]} onPress={() => projectId && router.push(`/project/${projectId}/chat`)} disabled={!projectId}>
+                  {t('job.chat')}
+                </Button>
+              </View>
             </Card.Content>
           </Card>
         ) : null}
 
-        {state.endStatus === 'partial' ? (
-          <Card mode="contained" style={{ backgroundColor: theme.colors.warningContainer }}>
-            <Card.Title title={t('job.partialTitle')} subtitle="Some checks didn’t pass." left={(p) => <MaterialCommunityIcons name="alert" size={p.size} color={theme.colors.warning} />} />
-            {state.blockers?.length ? (
-              <Card.Content>
-                {state.blockers.slice(0, 5).map((b) => (
-                  <Text key={b} variant="bodySmall">
-                    • {b}
+        {endStatus === 'partial' ? (
+          <Card mode="outlined" style={[styles.card, { borderColor: theme.colors.border }]}>
+            <Card.Content style={styles.result}>
+              <View style={styles.row} accessibilityLiveRegion="polite">
+                <MaterialCommunityIcons name="alert-circle" size={24} color={theme.colors.warning} />
+                <View style={styles.flex}>
+                  <Text variant="titleMedium" accessibilityRole="header">
+                    {t('job.partialTitle')}
                   </Text>
-                ))}
-              </Card.Content>
-            ) : null}
+                  <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
+                    {`${fileCount} ${fileCount === 1 ? 'file' : 'files'} · some checks didn’t pass. Repair fixes what it can.`}
+                  </Text>
+                </View>
+              </View>
+              {state.blockers?.length ? (
+                <View style={styles.gap}>
+                  {state.blockers.slice(0, 5).map((b) => (
+                    <Text key={b} variant="bodySmall" style={{ color: theme.colors.textMuted }}>
+                      • {b}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+              <Button mode="contained" icon="wrench-outline" contentStyle={styles.btn} loading={busy === 'repair'} disabled={!!busy} onPress={() => act('repair', () => aiApi.repair(jobId))}>
+                {t('job.repair')}
+              </Button>
+              <View style={styles.secondary}>
+                <Button mode="outlined" icon="folder-open-outline" textColor={theme.colors.onSurface} style={[styles.half, stackActions && styles.full, { borderColor: theme.colors.border }]} onPress={() => projectId && router.push(`/project/${projectId}`)} disabled={!projectId}>
+                  Open project
+                </Button>
+                <Button mode="outlined" icon="refresh" textColor={theme.colors.onSurface} style={[styles.half, stackActions && styles.full, { borderColor: theme.colors.border }]} loading={busy === 'retry'} disabled={!!busy} onPress={() => act('retry', () => aiApi.retry(jobId))}>
+                  {t('common.retry')}
+                </Button>
+              </View>
+            </Card.Content>
+          </Card>
+        ) : null}
             <Card.Actions style={styles.wrapActions}>
               <Button onPress={() => projectId && router.push(`/project/${projectId}`)} disabled={!projectId}>
                 Open project
@@ -223,7 +266,7 @@ export default function JobScreen() {
           </Card>
         ) : null}
 
-        {state.endStatus === 'failed' ? (
+        {endStatus === 'failed' ? (
           <Card mode="contained" style={{ backgroundColor: theme.colors.errorContainer }}>
             <Card.Title title={t('job.failedTitle')} subtitle={state.error ?? job.data?.error} subtitleNumberOfLines={4} left={(p) => <MaterialCommunityIcons name="close-circle" size={p.size} color={theme.colors.error} />} />
             <Card.Actions style={styles.wrapActions}>
@@ -287,7 +330,7 @@ export default function JobScreen() {
               </Text>
             </Card.Content>
             <Card.Actions>
-              <Button icon="file-tree-outline" onPress={() => router.push(`/project/${projectId}/files`)}>
+              <Button mode="outlined" icon="file-tree-outline" textColor={theme.colors.onSurface} style={{ borderColor: theme.colors.border }} onPress={() => router.push(`/project/${projectId}/files`)}>
                 Browse files
               </Button>
             </Card.Actions>
@@ -354,10 +397,13 @@ const styles = StyleSheet.create({
   notice: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10 },
   wrapActions: { flexWrap: 'wrap', gap: 4 },
   gap: { gap: 6 },
-  // Equal thirds normally; wraps instead of truncating at large text sizes.
-  successActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 14 },
-  successBtn: { flexGrow: 1, flexBasis: '30%' },
-  fullWidth: { flexBasis: '100%' },
+  card: { borderRadius: 12 },
+  result: { gap: 14, paddingVertical: 4 },
+  btn: { minHeight: 44 },
+  // Side by side normally; stacked at large text sizes so labels don't truncate.
+  secondary: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  half: { flexGrow: 1, flexBasis: '40%' },
+  full: { flexBasis: '100%' },
   section: { marginVertical: 0 },
   report: { paddingHorizontal: 16, paddingBottom: 12, fontFamily: 'monospace' },
   file: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 2 },

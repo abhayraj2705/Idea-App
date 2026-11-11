@@ -11,7 +11,6 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 type AppEnv = 'development' | 'staging' | 'production';
 
 const APP_ENV = (process.env.APP_ENV as AppEnv) || 'development';
-const IS_PROD = APP_ENV === 'production';
 const IS_DEV = APP_ENV === 'development';
 
 const VERSION = '1.0.0';
@@ -40,6 +39,15 @@ const variants: Record<AppEnv, { name: string; id: string; scheme: string; apiUr
 };
 
 const v = variants[APP_ENV];
+
+// Release builds must talk to a real HTTPS backend: Android blocks cleartext
+// traffic in release, and a localhost/emulator URL would ship a broken app.
+if (!IS_DEV) {
+  const url = new URL(v.apiUrl);
+  if (url.protocol !== 'https:' || ['localhost', '127.0.0.1', '10.0.2.2'].includes(url.hostname)) {
+    throw new Error(`[app.config] ${APP_ENV} build needs an HTTPS API URL, got "${v.apiUrl}". Set API_URL or WEB_DOMAIN.`);
+  }
+}
 
 const plugins: ExpoConfig['plugins'] = [
   'expo-router',
@@ -191,8 +199,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       android: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
       web: process.env.GOOGLE_WEB_CLIENT_ID || '',
     },
-    // Demo mode runs the full app against an in-memory backend. Never on in production.
-    mockApi: !IS_PROD && process.env.MOCK_API === '1',
     eas: process.env.EAS_PROJECT_ID ? { projectId: process.env.EAS_PROJECT_ID } : undefined,
   },
 });

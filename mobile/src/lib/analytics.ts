@@ -14,6 +14,7 @@ export type AnalyticsEvent =
   | 'login'
   | 'onboarding_complete'
   | 'idea_started'
+  | 'requirements_questions'
   | 'requirements_confirmed'
   | 'wireframe_approved'
   | 'generation_started'

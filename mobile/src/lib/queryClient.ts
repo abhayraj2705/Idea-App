@@ -25,6 +25,14 @@ export const queryClient = new QueryClient({
 });
 
 /** Only these roots are persisted to MMKV so the app opens instantly offline (§8.2). */
+/**
+ * Bump when the shape of cached query data changes (e.g. an API adapter now
+ * returns a different structure). The persisted cache is keyed on it, so data
+ * saved in the old shape is discarded instead of being rendered by new code.
+ *  2 — backend payloads are normalised through api/adapters.ts.
+ */
+export const CACHE_SCHEMA_VERSION = 2;
+
 export const PERSISTED_ROOTS = new Set(['me', 'projects', 'templates', 'project', 'app-config']);
 const MAX_PERSISTED_PROJECT_DETAILS = 5;
 

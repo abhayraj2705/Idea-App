@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { GenerationScope, Requirement, Wireframe } from '@/api/types';
+import type { GenerationScope, Requirement, RequirementsDocument, RequirementsQuestion, Wireframe } from '@/api/types';
 import { StorageKeys, storage } from '@/lib/storage';
 
 /**
@@ -12,7 +12,17 @@ export type BuilderDraft = {
   projectName?: string;
   scope: GenerationScope;
   stack?: string;
+  /** AI provider + model used for every builder step and the generation itself. */
+  provider?: string;
   model?: string;
+  /** Clarifying questions from the server, and the user's answers by question id. */
+  questions?: RequirementsQuestion[];
+  /** The prompt the questions were asked about; a changed idea asks again. */
+  questionsFor?: string;
+  answers: Record<string, string>;
+  /** Compiled requirements document (sent with the generate request). */
+  requirementsDoc?: RequirementsDocument;
+  /** Display list derived from the compiled document's core features. */
   requirements: Requirement[];
   wireframe?: Wireframe;
   wireframeApproved: boolean;
@@ -23,6 +33,7 @@ export type BuilderDraft = {
 export const emptyDraft: BuilderDraft = {
   prompt: '',
   scope: 'fullApp',
+  answers: {},
   requirements: [],
   wireframeApproved: false,
 };

@@ -7,6 +7,7 @@ import { Button, Card, Chip, Text } from 'react-native-paper';
 import { aiApi } from '@/api/endpoints/ai';
 import { ErrorView, LoadingView } from '@/components/StateViews';
 import { BuilderScaffold } from '@/features/builder/BuilderScaffold';
+import { useAiModel } from '@/features/builder/useAiModel';
 import { useTranslation } from '@/i18n';
 import { track } from '@/lib/analytics';
 import { useDraft } from '@/stores/draft';
@@ -17,8 +18,10 @@ export default function WireframeStep() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const { draft, update } = useDraft();
+  const ai = useAiModel();
+  const doc = draft.requirementsDoc ?? { originalPrompt: draft.prompt, projectName: draft.projectName ?? 'my-app' };
   const gen = useMutation({
-    mutationFn: () => aiApi.wireframe({ prompt: draft.prompt, requirements: draft.requirements, stack: draft.stack }),
+    mutationFn: () => aiApi.wireframe({ userPrompt: doc.compiledSummary || draft.prompt, requirements: doc, ...ai }),
     onSuccess: (wireframe) => update({ wireframe, wireframeApproved: false }),
   });
   const loading = gen.isPending;
@@ -33,7 +36,7 @@ export default function WireframeStep() {
     <BuilderScaffold
       step="wireframe"
       title={t('builder.wireframeTitle')}
-      subtitle="These are the screens we’ll build. Approve to continue."
+      subtitle={t('builder.wireframeBody')}
       nextLabel={t('builder.approve')}
       nextDisabled={!draft.wireframe || loading}
       onNext={() => {
@@ -41,12 +44,12 @@ export default function WireframeStep() {
         track('wireframe_approved');
       }}
       footerExtra={
-        <Button mode="outlined" icon="refresh" onPress={load} disabled={loading}>
+        <Button mode="outlined" icon="refresh" textColor={theme.colors.onSurface} style={{ borderColor: theme.colors.border }} onPress={load} disabled={loading}>
           {t('builder.regenerate')}
         </Button>
       }
     >
-      {loading ? <LoadingView label="Sketching your screens…" /> : null}
+      {loading ? <LoadingView label={t('builder.sketching')} /> : null}
       {error && !loading ? <ErrorView error={error} onRetry={load} /> : null}
       {!loading &&
         draft.wireframe?.screens.map((s, i) => (

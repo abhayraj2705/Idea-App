@@ -27,6 +27,7 @@ function useFinish() {
 /** Rendered only when a client id exists for this platform, because the hook asserts on it. */
 function GoogleButton({ onError, busy, setBusy }: { onError: (m: string) => void; busy: boolean; setBusy: (b: boolean) => void }) {
   const { t } = useTranslation();
+  const theme = useAppTheme();
   const finish = useFinish();
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     iosClientId: config.googleClientIds.ios || undefined,
@@ -54,6 +55,8 @@ function GoogleButton({ onError, busy, setBusy }: { onError: (m: string) => void
     <Button
       mode="outlined"
       icon="google"
+      textColor={theme.colors.onSurface}
+      style={{ borderColor: theme.colors.border }}
       disabled={!request || busy}
       onPress={() => {
         setBusy(true);
@@ -101,13 +104,13 @@ export function SocialAuthButtons() {
               ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
               : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
           }
-          cornerRadius={24}
+          cornerRadius={15}
           style={styles.apple}
           onPress={() => run('apple', signInWithApple)}
         />
       ) : null}
       {googleConfigured() ? <GoogleButton onError={setError} busy={busy} setBusy={setBusy} /> : null}
-      <Button mode="outlined" icon="github" disabled={busy} onPress={() => run('github', signInWithGitHub)} contentStyle={styles.btn}>
+      <Button mode="outlined" icon="github" textColor={theme.colors.onSurface} style={{ borderColor: theme.colors.border }} disabled={busy} onPress={() => run('github', signInWithGitHub)} contentStyle={styles.btn}>
         {t('auth.continueGithub')}
       </Button>
       {error ? (

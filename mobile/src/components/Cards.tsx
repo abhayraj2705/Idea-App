@@ -8,6 +8,7 @@ import type { Job, ProjectSummary, Template } from '@/api/types';
 import { STAGES, STAGE_LABEL } from '@/features/generation/eventReducer';
 import { useJobStream } from '@/features/generation/useJobStream';
 import { timeAgo } from '@/lib/format';
+import { radius } from '@/theme/radius';
 import { useAppTheme } from '@/theme/theme';
 
 import type { IconName } from './StateViews';
@@ -24,7 +25,7 @@ export const ProjectCard = memo(function ProjectCard({ project, onLongPress }: {
   return (
     <Card
       mode="outlined"
-      style={{ borderColor: theme.colors.border }}
+      style={[styles.card, { borderColor: theme.colors.border }]}
       onPress={() => router.push(`/project/${project.id}`)}
       onLongPress={onLongPress}
       accessibilityLabel={`Project ${project.name}`}
@@ -32,7 +33,7 @@ export const ProjectCard = memo(function ProjectCard({ project, onLongPress }: {
     >
       <Card.Content style={styles.row}>
         <View style={[styles.icon, { backgroundColor: theme.colors.surfaceVariant }]}>
-          <MaterialCommunityIcons name={kindIcon(project.kind)} size={22} color={theme.colors.primary} />
+          <MaterialCommunityIcons name={kindIcon(project.kind)} size={20} color={theme.colors.onSurface} />
         </View>
         <View style={styles.flex}>
           <Text variant="titleMedium" numberOfLines={2}>
@@ -56,10 +57,9 @@ export const RunningJobCard = memo(function RunningJobCard({ job }: { job: Job }
   const idx = STAGES.indexOf(state.stage);
   const progress = state.endStatus ? 1 : Math.max(0.05, (idx + 0.5) / STAGES.length);
   return (
-    <Card mode="contained" onPress={() => router.push(`/job/${job.id}`)} accessibilityLabel={`Generation ${job.projectName ?? ''}, stage ${STAGE_LABEL[state.stage]}`}>
+    <Card mode="outlined" style={[styles.card, { borderColor: theme.colors.border }]} onPress={() => router.push(`/job/${job.id}`)} accessibilityLabel={`Generation ${job.projectName ?? ''}, stage ${STAGE_LABEL[state.stage]}`}>
       <Card.Content style={styles.gap}>
         <View style={styles.row}>
-          <MaterialCommunityIcons name="progress-wrench" size={20} color={theme.colors.primary} />
           <Text variant="titleSmall" numberOfLines={1} style={styles.flex}>
             {job.projectName ?? 'New app'}
           </Text>
@@ -67,7 +67,7 @@ export const RunningJobCard = memo(function RunningJobCard({ job }: { job: Job }
         </View>
         <ProgressBar progress={progress} color={theme.colors.primary} style={styles.bar} />
         <Text variant="bodySmall" style={{ color: theme.colors.textMuted }}>
-          {state.phaseLabel || STAGE_LABEL[state.stage]} · {state.files.length} files
+          {state.phaseLabel || STAGE_LABEL[state.stage]} · {state.files.length} {state.files.length === 1 ? 'file' : 'files'}
         </Text>
       </Card.Content>
     </Card>
@@ -88,14 +88,14 @@ export const JobRow = memo(function JobRow({ job }: { job: Job }) {
   return (
     <Card
       mode="outlined"
-      style={{ borderColor: theme.colors.border }}
+      style={[styles.card, { borderColor: theme.colors.border }]}
       onPress={() => router.push(`/job/${job.id}`)}
       accessibilityLabel={`${job.projectName ?? 'Generation'}, ${jobWhen(job) ?? ''}`}
       accessibilityHint="Opens the generation"
     >
       <Card.Content style={styles.row}>
         <View style={[styles.icon, { backgroundColor: theme.colors.surfaceVariant }]}>
-          <MaterialCommunityIcons name="progress-check" size={22} color={theme.colors.primary} />
+          <MaterialCommunityIcons name="lightning-bolt-outline" size={20} color={theme.colors.onSurface} />
         </View>
         <View style={styles.flex}>
           <Text variant="titleSmall" numberOfLines={1}>
@@ -114,10 +114,10 @@ export const JobRow = memo(function JobRow({ job }: { job: Job }) {
 export const TemplateCard = memo(function TemplateCard({ template, width }: { template: Template; width?: number }) {
   const theme = useAppTheme();
   return (
-    <Card mode="outlined" style={[{ borderColor: theme.colors.border }, width ? { width } : null]} onPress={() => router.push(`/templates/${template.id}`)}>
+    <Card mode="outlined" style={[styles.card, { borderColor: theme.colors.border }, width ? { width } : null]} onPress={() => router.push(`/templates/${template.id}`)}>
       <Card.Content style={styles.gap}>
-        <View style={[styles.icon, { backgroundColor: theme.colors.primaryContainer }]}>
-          <MaterialCommunityIcons name={kindIcon(template.kind)} size={20} color={theme.colors.primary} />
+        <View style={[styles.icon, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <MaterialCommunityIcons name={kindIcon(template.kind)} size={20} color={theme.colors.onSurface} />
         </View>
         <Text variant="titleSmall" numberOfLines={1}>
           {template.name}
@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   gap: { gap: 8 },
   flex: { flex: 1 },
-  icon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  bar: { height: 6, borderRadius: 3 },
+  card: { borderRadius: radius.control },
+  icon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  bar: { height: 4, borderRadius: 2 },
 });

@@ -4,12 +4,11 @@ import { Platform } from 'react-native';
 
 import { authHeaders, buildUrl } from '@/api/client';
 import { projectsApi } from '@/api/endpoints/projects';
-import { config } from '@/lib/config';
 
 /** Download the project ZIP to the cache and hand it to the share sheet (§1.1). */
 export async function shareProjectZip(projectId: string, name: string): Promise<void> {
-  if (config.mockApi || Platform.OS === 'web') {
-    throw new Error('ZIP download needs the live backend.');
+  if (Platform.OS === 'web') {
+    throw new Error('Downloading a project ZIP is available in the iOS and Android apps.');
   }
   const safe = name.replace(/[^A-Za-z0-9._-]+/g, '-').slice(0, 60) || 'project';
   const dir = new Directory(Paths.cache, 'exports');

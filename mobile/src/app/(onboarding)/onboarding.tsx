@@ -43,8 +43,14 @@ export default function Onboarding() {
     setBusy(true);
     setError(null);
     try {
-      const user = await authApi.completeOnboarding({ defaultStack: stack });
-      useSession.getState().setUser({ ...user, onboardingCompleted: true });
+      await authApi.completeOnboarding({ defaultStack: stack });
+      const { user, setUser } = useSession.getState();
+      // The endpoint only acknowledges; update the profile we have, then reload it.
+      if (user) setUser({ ...user, onboardingCompleted: true, defaultStack: stack ?? user.defaultStack });
+      void authApi
+        .me()
+        .then(setUser)
+        .catch(() => {});
       track('onboarding_complete', { stack: stack ?? 'none' });
     } catch (e) {
       setError(errorMessage(e));
@@ -58,15 +64,15 @@ export default function Onboarding() {
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background, paddingTop: insets.top, paddingBottom: insets.bottom + 12 }]}>
       <View style={styles.top}>
-        <Button onPress={finish} disabled={busy}>
+        <Button onPress={finish} disabled={busy} textColor={theme.colors.textMuted}>
           {t('onboarding.skip')}
         </Button>
       </View>
       <ScrollView ref={scroller} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} style={styles.flex}>
         {cards.map((c) => (
           <View key={c.icon} style={[styles.page, { width }]}>
-            <View style={[styles.bigIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-              <MaterialCommunityIcons name={c.icon} size={56} color={theme.colors.primary} />
+            <View style={[styles.bigIcon, { backgroundColor: theme.colors.surfaceVariant }]}>
+              <MaterialCommunityIcons name={c.icon} size={40} color={theme.colors.onSurface} />
             </View>
             <Text variant="headlineMedium" style={styles.center} accessibilityRole="header">
               {c.title}
@@ -133,7 +139,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   top: { alignItems: 'flex-end', paddingHorizontal: 8 },
   page: { alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
-  bigIcon: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  bigIcon: { width: 88, height: 88, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   center: { textAlign: 'center' },
   stackPage: { padding: 24, gap: 12 },
   option: { borderWidth: 1, borderRadius: 12, padding: 8, marginBottom: 8 },

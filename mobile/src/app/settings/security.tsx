@@ -5,7 +5,8 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Platform, StyleSheet, View } from 'react-native';
-import { Button, Card, Divider, HelperText, List, Snackbar, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Divider, HelperText, List, Snackbar, Switch, Text } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 import { QRCode } from '@/components/QRCode';
 
 import { authApi, errorMessage } from '@/api';

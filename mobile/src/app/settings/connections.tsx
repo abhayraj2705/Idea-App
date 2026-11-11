@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Button, Card, Dialog, HelperText, IconButton, List, Portal, Snackbar, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Dialog, HelperText, IconButton, List, Portal, Snackbar, Text } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 
 import { connectionsApi, errorMessage, type ConnectionCapability } from '@/api';
 import { ConfirmDialog } from '@/components/ConfirmDialog';

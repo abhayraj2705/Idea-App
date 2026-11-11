@@ -2,7 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, HelperText, List, Text, TextInput } from 'react-native-paper';
+import { Button, Card, HelperText, List, Text } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 
 import { aiApi } from '@/api/endpoints/ai';
 import { errorMessage } from '@/api/client';

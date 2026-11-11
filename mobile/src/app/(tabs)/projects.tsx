@@ -17,6 +17,7 @@ import { useProjects } from '@/features/queries';
 import { useTranslation } from '@/i18n';
 import { haptics } from '@/lib/haptics';
 import { useSession } from '@/stores/session';
+import { radius } from '@/theme/radius';
 import { useAppTheme } from '@/theme/theme';
 
 export default function Projects() {
@@ -59,6 +60,11 @@ export default function Projects() {
         friction={2}
         rightThreshold={40}
         overshootRight={false}
+        // At rest the delete action sits under the card; its red bled through the card's rounded,
+        // anti-aliased edge. An opaque content layer hides it, and the clipped container keeps
+        // the revealed action inside the card's shape.
+        containerStyle={styles.swipeContainer}
+        childrenContainerStyle={{ backgroundColor: theme.colors.background }}
         renderRightActions={() => (
           <Pressable
             onPress={() => setToDelete(item)}
@@ -145,5 +151,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   controls: { padding: 16, gap: 12 },
   list: { paddingHorizontal: 16, paddingBottom: 32 },
-  swipeAction: { width: 80, alignItems: 'center', justifyContent: 'center', borderRadius: 12, marginLeft: 8 },
+  swipeContainer: { borderRadius: radius.control, overflow: 'hidden' },
+  swipeAction: { width: 88, alignItems: 'center', justifyContent: 'center' },
 });

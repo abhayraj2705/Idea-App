@@ -2,7 +2,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Avatar, Button, Card, HelperText, IconButton, List, Menu, Snackbar, Text, TextInput } from 'react-native-paper';
+import { Button, Card, HelperText, IconButton, List, Menu, Snackbar, Text } from 'react-native-paper';
+import { Avatar } from '@/components/Avatar';
+import { TextInput } from '@/components/TextInput';
 
 import { errorMessage, teamsApi, type TeamMember, type TeamRole } from '@/api';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -103,7 +105,11 @@ export default function TeamScreen() {
                 key={m.userId}
                 title={`${m.name ?? m.email}${self ? ' (you)' : ''}`}
                 description={m.email}
-                left={() => <Avatar.Text size={36} label={(m.name ?? m.email).slice(0, 1).toUpperCase()} style={styles.avatar} />}
+                left={() => (
+                  <View style={styles.avatar}>
+                    <Avatar name={m.name ?? m.email} size={36} />
+                  </View>
+                )}
                 right={() => (
                   <View style={styles.row}>
                     <StatusChip status="draft" label={m.role} compact />

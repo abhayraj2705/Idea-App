@@ -2,9 +2,10 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FlashList } from '@shopify/flash-list';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Card, Chip, Dialog, IconButton, Portal, Snackbar, Text, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, Card, Chip, Dialog, IconButton, Portal, Snackbar, Text } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { aiApi, errorMessage, projectsApi, type ChatMessage, type ChatMode } from '@/api';
@@ -12,8 +13,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { MarkdownView } from '@/components/MarkdownView';
 import { useIsOffline } from '@/components/OfflineBanner';
 import { ErrorView, LoadingView } from '@/components/StateViews';
-import { isTerminal } from '@/features/generation/eventReducer';
-import { useJobStream } from '@/features/generation/useJobStream';
+import { sseRequest } from '@/api/sse';
+import { useAiModel } from '@/features/builder/useAiModel';
+import { applyEvent, initialGenerationState, type GenerationState } from '@/features/generation/eventReducer';
 import { qk, useProject } from '@/features/queries';
 import { track } from '@/lib/analytics';
 import { timeAgo, uuid } from '@/lib/format';
@@ -78,7 +80,12 @@ export default function ChatScreen() {
   const [mode, setMode] = useState<ChatMode>(modes[0]!);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [turnJob, setTurnJob] = useState<string | undefined>();
+  // Live state of the turn being streamed (chat/v2 answers over the request itself).
+  const [turn, setTurn] = useState<GenerationState>(initialGenerationState);
+  const [turnKey, setTurnKey] = useState<string | undefined>();
+  const [streaming, setStreaming] = useState(false);
+  const turnRef = useRef<GenerationState>(initialGenerationState);
+  const ai = useAiModel();
   const [restoreTarget, setRestoreTarget] = useState<ChatMessage | null>(null);
   const [scopeDismissed, setScopeDismissed] = useState<string | undefined>();
   const [snack, setSnack] = useState<string | null>(null);
@@ -107,17 +114,35 @@ export default function ChatScreen() {
     return all.filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true))).sort((a, b) => a.seq - b.seq);
   }, [messages.data]);
 
-  // Live turn stream (Edit chat): turn / delta / agent_step / proposal / scope_upgrade_required.
-  const { state: turn } = useJobStream(turnJob, { enabled: !!turnJob });
-  const scopeSheet = !!turnJob && turn.scopeUpgradeRequired && scopeDismissed !== turnJob;
+  // Edit-chat stream events: turn / delta / agent_step / proposal / scope_upgrade_required / complete.
+  const scopeSheet = !!turnKey && turn.scopeUpgradeRequired && scopeDismissed !== turnKey;
   const setScopeSheet = (open: boolean) => {
-    if (!open) setScopeDismissed(turnJob);
+    if (!open) setScopeDismissed(turnKey);
   };
-  useEffect(() => {
-    if (!turnJob || !isTerminal(turn)) return;
-    if (turn.proposalId) router.push(`/project/${id}/proposal/${turn.proposalId}`);
-    void qc.invalidateQueries({ queryKey: qk.messages(convId ?? '') });
-  }, [turn.endStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Streams one chat/v2 turn into `turn`; resolves when the server closes it. */
+  const streamTurn = async (content: string) => {
+    let seq = 0;
+    turnRef.current = initialGenerationState;
+    setTurn(initialGenerationState);
+    setTurnKey(uuid());
+    setStreaming(true);
+    try {
+      const req = sseRequest('/api/ai/chat/v2', {
+        body: { projectId: id, conversationId: convId, projectName: project.data?.name, mode, message: content, ...ai },
+        onEvent: ({ type, data }) => {
+          turnRef.current = applyEvent(turnRef.current, { seq: ++seq, type, data });
+          setTurn(turnRef.current);
+        },
+      });
+      await req.done;
+      const final = turnRef.current;
+      if (final.error) throw new Error(final.error);
+      if (final.proposalId) router.push(`/project/${id}/proposal/${final.proposalId}`);
+    } finally {
+      setStreaming(false);
+    }
+  };
 
   const send = async () => {
     const content = text.trim();
@@ -131,9 +156,7 @@ export default function ChatScreen() {
     try {
       track('chat_turn', { mode });
       if (flags.editChat) {
-        const res = await aiApi.chatV2({ projectId: id, conversationId: convId, mode, message: content });
-        if (res.jobId) setTurnJob(res.jobId);
-        else if (res.proposalId) router.push(`/project/${id}/proposal/${res.proposalId}`);
+        await streamTurn(content);
       } else {
         await aiApi.chatLegacy({ projectId: id, message: content, mode: mode === 'refine' ? 'refine' : 'chat' });
       }
@@ -164,7 +187,6 @@ export default function ChatScreen() {
     }
   };
 
-  const streaming = !!turnJob && !isTerminal(turn);
 
   if (!flags.conversationThread) {
     return <ErrorView error={new Error('Chat history is not enabled for this project.')} title="Chat unavailable" />;

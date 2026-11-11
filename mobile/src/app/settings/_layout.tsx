@@ -1,8 +1,12 @@
 import { Stack } from 'expo-router';
 
+import { headerOptions } from '@/theme/navigation';
+import { useAppTheme } from '@/theme/theme';
+
 export default function SettingsLayout() {
+  const theme = useAppTheme();
   return (
-    <Stack screenOptions={{ headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}>
+    <Stack screenOptions={headerOptions(theme)}>
       <Stack.Screen name="account" options={{ title: 'Account' }} />
       <Stack.Screen name="security" options={{ title: 'Security' }} />
       <Stack.Screen name="api-keys" options={{ title: 'API keys' }} />

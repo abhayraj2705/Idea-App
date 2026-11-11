@@ -2,7 +2,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, HelperText, Text, TextInput } from 'react-native-paper';
+import { Button, Card, HelperText, Text } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 
 import { authApi, errorMessage } from '@/api';
 import { ConfirmDialog } from '@/components/ConfirmDialog';

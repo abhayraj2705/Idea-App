@@ -105,3 +105,30 @@ describe('generation event reducer', () => {
     expect(s.stage).toBe('verify');
   });
 });
+
+describe('platform backend event names', () => {
+  const ev = (seq: number, type: string, data: Record<string, unknown> = {}): JobEvent => ({ seq, type, data });
+
+  it('reads phase text from `message`', () => {
+    const s = applyEvent(initialGenerationState, ev(1, 'phase', { phase: 'planning', message: 'Analysing your idea' }));
+    expect(s.phaseLabel).toBe('Analysing your idea');
+    expect(s.stage).toBe('plan');
+  });
+
+  it('collects `file` events with a size derived from content', () => {
+    const s = applyEvent(initialGenerationState, ev(1, 'file', { path: 'backend/server.ts', content: 'abcd' }));
+    expect(s.files[0]).toMatchObject({ path: 'backend/server.ts', size: 4 });
+  });
+
+  it('`canceled` ends the run as cancelled', () => {
+    const s = applyEvent(initialGenerationState, ev(1, 'canceled'));
+    expect(s.status).toBe('cancelled');
+    expect(isTerminal(s)).toBe(true);
+  });
+
+  it('`stream_end` (no seq) supplies the final status, e.g. partial after complete', () => {
+    const done = applyEvents(initialGenerationState, [ev(1, 'complete', { projectId: 'p1' }), ev(-1, 'stream_end', { status: 'partial' })]);
+    expect(done.endStatus).toBe('partial');
+    expect(done.projectId).toBe('p1');
+  });
+});

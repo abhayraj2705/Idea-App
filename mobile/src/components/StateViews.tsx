@@ -34,11 +34,11 @@ export function EmptyView({
   const theme = useAppTheme();
   return (
     <View style={styles.center}>
-      <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]} importantForAccessibility="no-hide-descendants">
+      <View style={[styles.iconWrap, { backgroundColor: theme.colors.surfaceVariant }]} importantForAccessibility="no-hide-descendants">
         {icon ? (
-          <MaterialCommunityIcons name={icon} size={32} color={theme.colors.primary} />
+          <MaterialCommunityIcons name={icon} size={28} color={theme.colors.textMuted} />
         ) : (
-          <BrandArrowIcon size={26} color={theme.colors.primary} />
+          <BrandArrowIcon size={22} color={theme.colors.textMuted} />
         )}
       </View>
       <Text variant="titleMedium" style={styles.text} accessibilityRole="header">
@@ -49,7 +49,7 @@ export function EmptyView({
           {body}
         </Text>
       ) : null}
-      {action}
+      {action ? <View style={styles.action}>{action}</View> : null}
     </View>
   );
 }
@@ -60,16 +60,16 @@ export function ErrorView({ error, onRetry, title }: { error: unknown; onRetry?:
   return (
     <View style={styles.center} accessibilityLiveRegion="polite">
       <View style={[styles.iconWrap, { backgroundColor: theme.colors.errorContainer }]}>
-        <MaterialCommunityIcons name="alert-circle-outline" size={32} color={theme.colors.error} />
+        <MaterialCommunityIcons name="alert-circle-outline" size={28} color={theme.colors.error} />
       </View>
-      <Text variant="titleMedium" style={styles.text}>
+      <Text variant="titleMedium" style={styles.text} accessibilityRole="header">
         {title ?? t('common.somethingWrong')}
       </Text>
       <Text variant="bodyMedium" style={[styles.text, { color: theme.colors.textMuted }]}>
         {errorMessage(error)}
       </Text>
       {onRetry ? (
-        <Button mode="outlined" icon="refresh" onPress={onRetry}>
+        <Button mode="outlined" icon="refresh" onPress={onRetry} textColor={theme.colors.onSurface} style={styles.action}>
           {t('common.retry')}
         </Button>
       ) : null}
@@ -78,7 +78,8 @@ export function ErrorView({ error, onRetry, title }: { error: unknown; onRetry?:
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12, minHeight: 240 },
-  iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  text: { textAlign: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8, minHeight: 240 },
+  iconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  text: { textAlign: 'center', maxWidth: 320 },
+  action: { marginTop: 8 },
 });

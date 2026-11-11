@@ -12,26 +12,27 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { aiApi } from '@/api/endpoints/ai';
 import { appConfigApi } from '@/api/endpoints/platform';
+import type { AppConfig } from '@/api/types';
 import { setUnauthorizedHandler } from '@/api/client';
-import { installMockBackend } from '@/api/mock';
 import { AppLock } from '@/components/AppLock';
 import { BootScreen } from '@/components/brand/LogoLoader';
 import { installNotificationHandler, useNotificationRouting } from '@/features/notifications/push';
 import { config } from '@/lib/config';
-import { queryClient, queryPersister, shouldPersistQuery } from '@/lib/queryClient';
+import { CACHE_SCHEMA_VERSION, queryClient, queryPersister, shouldPersistQuery } from '@/lib/queryClient';
 import { initSentry } from '@/lib/sentry';
 import { isBelowMinimum } from '@/lib/version';
 import { usePrefs } from '@/stores/prefs';
 import { useSession } from '@/stores/session';
 import { font, fontAssets } from '@/theme/fonts';
-import { darkTheme, lightTheme } from '@/theme/theme';
+import { headerOptions } from '@/theme/navigation';
+import { darkTheme, lightTheme, useAppTheme } from '@/theme/theme';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 250, fade: true });
 initSentry();
 installNotificationHandler();
-if (config.mockApi) installMockBackend();
 setUnauthorizedHandler(() => void useSession.getState().signOut('expired'));
 
 export { ErrorBoundary } from 'expo-router';
@@ -39,9 +40,9 @@ export { ErrorBoundary } from 'expo-router';
 // Deep links (push notifications, email links) land on nested screens with no
 // history; without an initial route, Android back exits the app. `index`
 // redirects to the right home for the session when it becomes focused.
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index' };
 
-function useAppTheme() {
+function useResolvedTheme() {
   const system = useColorScheme();
   const mode = usePrefs((s) => s.themeMode);
   const scheme = mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
@@ -49,7 +50,7 @@ function useAppTheme() {
 }
 
 export default function RootLayout() {
-  const theme = useAppTheme();
+  const theme = useResolvedTheme();
   // Brand fonts are bundled, so this resolves in a frame or two. The native splash
   // stays up until then; on a load error we fall back to the system font rather than block.
   const [fontsLoaded, fontError] = useFonts(fontAssets);
@@ -90,7 +91,7 @@ export default function RootLayout() {
           persistOptions={{
             persister: queryPersister,
             maxAge: 7 * 24 * 60 * 60 * 1000,
-            buster: config.appVersion,
+            buster: `${config.appVersion}:${CACHE_SCHEMA_VERSION}`,
             dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
           }}
         >
@@ -115,6 +116,7 @@ function RootNavigator() {
   const pendingInvite = useSession((s) => s.pendingInvite);
   const [booted, setBooted] = useState(false);
   const segments = useSegments();
+  const theme = useAppTheme();
 
   // Launch → app-config (update gate) → /me → tabs or auth (§8.4).
   useEffect(() => {
@@ -124,7 +126,21 @@ function RootNavigator() {
         const cfg = await appConfigApi.get();
         if (!cancelled) useSession.getState().setAppConfig(cfg);
       } catch {
-        // Offline or older backend: continue with defaults; the gate re-checks on next launch.
+        // Backend without /app-config (or offline): take the feature flags the
+        // server already reports on /ai/capabilities, so the app never offers a
+        // step (scope picker, preview, plan gate) the server has switched off.
+        try {
+          const caps = await aiApi.capabilities();
+          if (!cancelled) {
+            useSession.getState().setAppConfig({
+              minSupportedVersion: { ios: '0.0.0', android: '0.0.0' },
+              maintenance: { active: false },
+              features: caps.flags as AppConfig['features'],
+            });
+          }
+        } catch {
+          // Offline: continue with defaults; the gate re-checks on next launch.
+        }
       }
       await useSession.getState().restore();
       if (!cancelled) setBooted(true);
@@ -161,7 +177,7 @@ function RootNavigator() {
   const needsOnboarding = signedIn && !!user && user.onboardingCompleted === false;
 
   return (
-    <Stack screenOptions={{ headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}>
+    <Stack screenOptions={headerOptions(theme)}>
       <Stack.Protected guard={needsUpdate}>
         <Stack.Screen name="update-required" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack.Protected>

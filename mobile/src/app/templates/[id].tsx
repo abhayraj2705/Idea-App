@@ -65,8 +65,8 @@ export default function TemplateDetail() {
           </>
         }
       >
-        <View style={[styles.hero, { backgroundColor: theme.colors.primaryContainer }]}>
-          <MaterialCommunityIcons name={kindIcon(t.kind)} size={56} color={theme.colors.primary} />
+        <View style={[styles.hero, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <MaterialCommunityIcons name={kindIcon(t.kind)} size={44} color={theme.colors.textMuted} />
         </View>
         <Text variant="headlineSmall">{t.name}</Text>
         {t.stack ? <Text variant="labelLarge" style={{ color: theme.colors.textMuted }}>{t.stack}</Text> : null}
@@ -91,6 +91,6 @@ export default function TemplateDetail() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 160, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  hero: { height: 140, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 });

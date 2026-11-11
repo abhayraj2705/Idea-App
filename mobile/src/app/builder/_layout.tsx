@@ -1,13 +1,16 @@
 import { router, Stack } from 'expo-router';
 import { IconButton } from 'react-native-paper';
 
+import { headerOptions } from '@/theme/navigation';
+import { useAppTheme } from '@/theme/theme';
+
 export default function BuilderLayout() {
+  const theme = useAppTheme();
   return (
     <Stack
       screenOptions={{
-        headerShadowVisible: false,
-        headerTitle: 'New idea',
-        headerBackButtonDisplayMode: 'minimal',
+        ...headerOptions(theme),
+        headerTitle: 'New app',
         headerRight: () => (
           <IconButton
             icon="close"

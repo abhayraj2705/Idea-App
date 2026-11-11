@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, ProgressBar, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { Screen } from '@/components/Screen';
+import { useTranslation } from '@/i18n';
 import { useFeatures } from '@/stores/session';
 import { useAppTheme } from '@/theme/theme';
 
@@ -25,6 +26,7 @@ type Props = {
 
 export function BuilderScaffold({ step, title, subtitle, children, nextLabel, nextDisabled, nextLoading, onNext, footerExtra, scroll = true }: Props) {
   const theme = useAppTheme();
+  const { t } = useTranslation();
   const flags = useFeatures();
   const { index, total } = stepProgress(step, flags);
   const next = nextStep(step, flags);
@@ -43,14 +45,18 @@ export function BuilderScaffold({ step, title, subtitle, children, nextLabel, ne
         <>
           {footerExtra}
           <Button mode="contained" onPress={go} disabled={nextDisabled || nextLoading} loading={nextLoading} contentStyle={styles.btn}>
-            {nextLabel ?? 'Next'}
+            {nextLabel ?? t('common.continue')}
           </Button>
         </>
       }
     >
       <View style={styles.head}>
-        <ProgressBar progress={index / total} color={theme.colors.primary} style={styles.bar} accessibilityLabel={`Step ${index} of ${total}`} />
-        <Text variant="labelMedium" style={{ color: theme.colors.textMuted }}>
+        <View style={styles.steps} accessible accessibilityRole="progressbar" accessibilityLabel={`Step ${index} of ${total}`}>
+          {Array.from({ length: total }, (_, i) => (
+            <View key={i} style={[styles.step, { backgroundColor: i < index ? theme.colors.primary : theme.colors.surfaceVariant }]} />
+          ))}
+        </View>
+        <Text variant="labelMedium" style={[styles.stepLabel, { color: theme.colors.textMuted }]} importantForAccessibility="no">
           Step {index} of {total}
         </Text>
         <Text variant="headlineSmall" accessibilityRole="header">
@@ -68,7 +74,11 @@ export function BuilderScaffold({ step, title, subtitle, children, nextLabel, ne
 }
 
 const styles = StyleSheet.create({
-  head: { gap: 6 },
-  bar: { height: 4, borderRadius: 2 },
+  // flexShrink 0: when a step's content is taller than the screen, the scroll
+  // container would otherwise squash the header and the title slid under the content.
+  head: { gap: 4, flexShrink: 0 },
+  steps: { flexDirection: 'row', gap: 4, marginBottom: 12 },
+  step: { flex: 1, height: 3, borderRadius: 2 },
+  stepLabel: { textTransform: 'uppercase', letterSpacing: 0.6 },
   btn: { minHeight: 48 },
 });

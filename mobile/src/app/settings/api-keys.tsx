@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, HelperText, IconButton, Snackbar, Text, TextInput } from 'react-native-paper';
+import { Button, Card, HelperText, IconButton, Snackbar, Text } from 'react-native-paper';
+import { TextInput } from '@/components/TextInput';
 
 import { authApi, errorMessage } from '@/api';
 import { ConfirmDialog } from '@/components/ConfirmDialog';

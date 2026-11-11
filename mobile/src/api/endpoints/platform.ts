@@ -1,4 +1,5 @@
-import { api } from '../client';
+import { itemOf, listOf, toConnectionCapabilities, toConnections, toDbEngines, toDeployProviders, toSdk } from '../adapters';
+import { api, buildUrl } from '../client';
 import type {
   AppConfig,
   Connection,
@@ -23,39 +24,49 @@ export const appConfigApi = {
 };
 
 export const previewApi = {
+  /**
+   * Live preview session (backend-preview module). The server returns a token;
+   * the preview itself is served from the same mount, as the web app loads it.
+   */
   sessionToken: (projectId: string) =>
-    api.post<{ token: string; url: string }>(`/api/ai/preview/${projectId}/__control/session-token`, {}, { guest: true }),
+    api
+      .post<{ token: string; url?: string }>(`/api/ai/backend-preview/${projectId}/__control/session-token`, {}, { guest: true })
+      .then((d) => ({
+        token: d.token,
+        url: d.url ?? buildUrl(`/api/ai/backend-preview/${projectId}/`, { token: d.token }),
+      })),
   createMobilePreview: (projectId: string) => api.post<MobilePreview>(`/api/mobile/projects/${projectId}/preview`),
   mobilePreview: (previewId: string) => api.get<MobilePreview>(`/api/mobile/previews/${previewId}`),
 };
 
 const M = '/api/mobile';
 export const mobileBuildApi = {
-  sdk: () => api.get<{ versions: string[]; latest: string }>(`${M}/sdk`),
+  sdk: () => api.get<unknown>(`${M}/sdk`).then(toSdk),
   readiness: (projectId: string) => api.get<Readiness>(`${M}/projects/${projectId}/readiness`),
   repair: (projectId: string) => api.post<Readiness>(`${M}/projects/${projectId}/repair`),
   projectSdk: (projectId: string) => api.get<SdkInfo>(`${M}/projects/${projectId}/sdk`),
   upgradeSdk: (projectId: string) => api.post<SdkInfo>(`${M}/projects/${projectId}/upgrade-sdk`),
-  builds: (projectId: string) => api.get<MobileBuild[]>(`${M}/projects/${projectId}/builds`),
+  builds: (projectId: string) => api.get<unknown>(`${M}/projects/${projectId}/builds`).then((d) => listOf<MobileBuild>(d, 'builds')),
   startBuild: (projectId: string) => api.post<MobileBuild>(`${M}/projects/${projectId}/builds`, { platform: 'android' }),
   build: (buildId: string) => api.get<MobileBuild>(`${M}/builds/${buildId}`),
 };
 
 const D = '/api/deploy';
 export const deployApi = {
-  providers: () => api.get<DeployProvider[]>(`${D}/providers`),
+  providers: (): Promise<DeployProvider[]> => api.get<unknown>(`${D}/providers`).then(toDeployProviders),
   previewPlan: (projectId: string, provider: string) => api.post<DeployPlan>(`${D}/plan/preview`, { projectId, provider }),
   launch: (planId: string) => api.post<Deployment>(`${D}/launch`, { planId }),
   plan: (planId: string) => api.get<DeployPlan>(`${D}/plan/${planId}`),
   cancelPlan: (planId: string) => api.post<DeployPlan>(`${D}/plan/${planId}/cancel`),
-  deployments: (projectId: string) => api.get<Deployment[]>(`${D}/deployments/${projectId}`),
+  deployments: (projectId: string) =>
+    api.get<unknown>(`${D}/deployments/${projectId}`).then((d) => listOf<Deployment>(d, 'deployments')),
   status: (deploymentId: string) => api.get<Deployment>(`${D}/deployment/${deploymentId}/status`),
 };
 
 const C = '/api/platform/connections';
 export const connectionsApi = {
-  capabilities: () => api.get<ConnectionCapability[]>(`${C}/capabilities`),
-  list: () => api.get<Connection[]>(C),
+  capabilities: (): Promise<ConnectionCapability[]> => api.get<unknown>(`${C}/capabilities`).then(toConnectionCapabilities),
+  list: (): Promise<Connection[]> => api.get<unknown>(C).then(toConnections),
   /** §6.2 native redirect variant. */
   oauthStart: (provider: string, redirect: string) =>
     api.post<{ url: string }>(`${C}/${provider}/oauth/start`, { client: 'mobile', redirect }),
@@ -67,7 +78,7 @@ export const connectionsApi = {
 const T = '/api/platform/teams';
 export const teamsApi = {
   create: (name: string) => api.post<Team>(T, { name }),
-  myTeam: () => api.get<Team | null>(`${T}/my-team`),
+  myTeam: () => api.get<unknown>(`${T}/my-team`).then((d) => itemOf<Team | null>(d, 'team') ?? null),
   invite: (email: string, role: TeamRole) => api.post<{ token: string }>(`${T}/invite`, { email, role }),
   acceptInvite: (token: string) => api.post<Team>(`${T}/accept-invite`, { token }),
   setRole: (userId: string, role: TeamRole) => api.patch<Team>(`${T}/members/${userId}/role`, { role }),
@@ -79,8 +90,8 @@ export const teamsApi = {
 };
 
 export const dbApi = {
-  engines: () => api.get<{ id: string; name: string }[]>('/api/db/engines'),
-  list: () => api.get<DbConnection[]>('/api/db'),
+  engines: () => api.get<unknown>('/api/db/engines').then(toDbEngines),
+  list: () => api.get<unknown>('/api/db').then((d) => listOf<DbConnection>(d, 'connections')),
   test: (id: string) => api.post<{ ok: boolean; message?: string; latencyMs?: number }>(`/api/db/${id}/test`),
 };
 
